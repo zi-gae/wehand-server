@@ -7,6 +7,10 @@ import homeRoutes from './home';
 import matchRoutes from './matches';
 import regionRoutes from './regions';
 import venueRoutes from './venues';
+import communityRoutes from './community';
+import profileRoutes from './profile';
+import notificationRoutes from './notifications';
+import chatRoutes from './chat';
 
 const router = Router();
 
@@ -44,5 +48,9 @@ router.use('/home', homeRoutes);
 router.use('/matches', matchRoutes);
 router.use('/regions', regionRoutes);
 router.use('/venues', venueRoutes);
+router.use('/community', communityRoutes);
+router.use('/profile', profileRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/chat', chatRoutes);
 
 export default router;

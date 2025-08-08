@@ -5,18 +5,21 @@ export interface AppError extends Error {
   statusCode?: number;
   code?: string;
   isOperational?: boolean;
+  details?: any;
 }
 
 export class ApiError extends Error implements AppError {
   statusCode: number;
   code: string;
   isOperational: boolean;
+  details?: any;
 
-  constructor(statusCode: number, message: string, code?: string, isOperational = true) {
+  constructor(statusCode: number, message: string, code?: string, isOperational = true, details?: any) {
     super(message);
     this.statusCode = statusCode;
     this.code = code || 'INTERNAL_ERROR';
     this.isOperational = isOperational;
+    this.details = details;
     Error.captureStackTrace(this, this.constructor);
   }
 }
@@ -27,12 +30,13 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  let { statusCode = 500, message, code } = error;
+  let { statusCode = 500, message, code, details } = error;
 
   if (!error.isOperational) {
     logger.error('Unexpected Error:', {
       error: error.message,
       stack: error.stack,
+      details: error.details,
       url: req.url,
       method: req.method,
       ip: req.ip,
@@ -42,6 +46,15 @@ export const errorHandler = (
     statusCode = 500;
     message = '서버 내부 오류가 발생했습니다';
     code = 'INTERNAL_SERVER_ERROR';
+  } else {
+    logger.error('Operational Error:', {
+      statusCode,
+      code,
+      message,
+      details,
+      url: req.url,
+      method: req.method
+    });
   }
 
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -52,7 +65,7 @@ export const errorHandler = (
       code: code || 'UNKNOWN_ERROR',
       message,
       ...(isDevelopment && { stack: error.stack }),
-      ...(isDevelopment && { details: error })
+      ...(details && { details })
     }
   });
 };
@@ -74,7 +87,13 @@ export const validationErrorHandler = (error: any) => {
       `${err.path.join('.')}: ${err.message}`
     ).join(', ');
     
-    return new ApiError(400, `입력 데이터 검증 실패: ${message}`, 'VALIDATION_ERROR');
+    return new ApiError(
+      400, 
+      `입력 데이터 검증 실패: ${message}`, 
+      'VALIDATION_ERROR',
+      true,
+      error.errors
+    );
   }
 
   return error;

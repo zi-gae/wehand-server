@@ -2,10 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../lib/supabase';
 import { ApiError } from './errorHandler';
 import { logger } from '../config/logger';
+import { AuthRequest } from '../types/auth';
 
 declare global {
   namespace Express {
     interface Request {
+      userId?: string;
       user?: {
         id: string;
         email: string;
@@ -49,6 +51,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       throw new ApiError(404, '사용자 정보를 찾을 수 없습니다', 'USER_NOT_FOUND');
     }
 
+    req.userId = user.id;
     req.user = {
       id: user.id,
       email: user.email || userData.email,
@@ -87,6 +90,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
         .single();
 
       if (userData) {
+        req.userId = user.id;
         req.user = {
           id: user.id,
           email: user.email || userData.email,
@@ -117,4 +121,40 @@ export const requireRole = (roles: string | string[]) => {
 
     next();
   };
+};
+
+// Socket.io 인증 함수
+export const authenticateSocket = async (token: string) => {
+  try {
+    if (!token) {
+      throw new Error('토큰이 필요합니다');
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      throw new Error('유효하지 않은 토큰입니다');
+    }
+
+    // 사용자 정보를 데이터베이스에서 가져오기
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, email, name, nickname')
+      .eq('id', user.id)
+      .single();
+
+    if (userError) {
+      throw new Error('사용자 정보를 찾을 수 없습니다');
+    }
+
+    return {
+      id: user.id,
+      email: user.email || userData.email,
+      name: userData.name,
+      nickname: userData.nickname
+    };
+  } catch (error) {
+    logger.error('Socket authentication error:', error);
+    throw error;
+  }
 };

@@ -220,6 +220,7 @@ CREATE TABLE match_reviews (
     
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
+    ntrp_evaluation DECIMAL(2,1) CHECK (ntrp_evaluation >= 1.0 AND ntrp_evaluation <= 7.0), -- NTRP level evaluation
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
@@ -564,6 +565,7 @@ SELECT
     m.*,
     v.name AS venue_name,
     v.address AS venue_address,
+    v.amenities AS amenities,
     u.name AS host_name,
     u.ntrp AS host_ntrp,
     u.experience_years AS host_experience
@@ -637,8 +639,9 @@ CREATE POLICY users_public_read ON users FOR SELECT USING (true);
 -- User preferences are private
 CREATE POLICY user_preferences_own ON user_preferences FOR ALL USING (auth.uid() = user_id);
 
--- Matches are publicly readable, but only hosts can update their matches
+-- Matches are publicly readable, authenticated users can create, only hosts can update/delete their matches
 CREATE POLICY matches_read_public ON matches FOR SELECT USING (true);
+CREATE POLICY matches_create_authenticated ON matches FOR INSERT WITH CHECK (auth.uid() = host_id);
 CREATE POLICY matches_host_update ON matches FOR UPDATE USING (auth.uid() = host_id);
 CREATE POLICY matches_host_delete ON matches FOR DELETE USING (auth.uid() = host_id);
 
