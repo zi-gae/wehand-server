@@ -33,14 +33,14 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:3000',
-      'http://localhost:3001', 
-      'http://localhost:5173',
-      'https://wehand.tennis'
+    origin: process.env.ALLOWED_ORIGINS?.split(",") || [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:5173",
+      "https://wehand.tennis",
     ],
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
 const PORT = process.env.PORT || 3000;
@@ -115,85 +115,139 @@ app.use(errorHandler);
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
+
+    console.log("@@@socket.handshake", socket.handshake);
     if (!token) {
-      return next(new Error('인증 토큰이 필요합니다'));
+      return next(new Error("인증 토큰이 필요합니다"));
     }
-    
+
     const user = await authenticateSocket(token);
     socket.data.user = user;
     socket.data.userId = user.id;
-    
+
     logger.info(`Socket 인증 성공: ${user.nickname} (${user.id})`);
     next();
   } catch (error: any) {
     logger.warn(`Socket 인증 실패: ${error.message}`);
-    next(new Error('인증에 실패했습니다'));
+    next(new Error("인증에 실패했습니다"));
   }
 });
 
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   const user = socket.data.user;
   logger.info(`사용자 연결됨: ${user.nickname} (${socket.id})`);
-  
-  // 채팅방 입장
-  socket.on('join-chat-room', (roomId) => {
-    socket.join(`chat-${roomId}`);
-    logger.info(`${user.nickname}이 채팅방 ${roomId}에 입장`);
-    
+
+  // 사용자별 개인 채널 자동 구독 (채팅방 목록 업데이트용)
+  const userChannel = `user-${user.id}`;
+  socket.join(userChannel);
+  logger.info(`사용자 ${user.nickname}이 개인 채널 ${userChannel}에 구독됨`);
+
+  const logRoomSize = (roomId: string) => {
+    const size = io.sockets.adapter.rooms.get(roomId)?.size ?? 0;
+    logger.info(`[socket] room '${roomId}' subscribers: ${size}`);
+    return size;
+  };
+
+  // 채팅방 입장 (기존 이벤트명)
+  socket.on("join-chat-room", (roomId) => {
+    const room = `chat-${roomId}`;
+    socket.join(room);
+    const size = logRoomSize(room);
+    logger.info(
+      `${user.name}이 채팅방 ${roomId}에 입장 (subscribers: ${size})`
+    );
+
     // 다른 사용자들에게 입장 알림
-    socket.to(`chat-${roomId}`).emit('user-joined', {
+    socket.to(room).emit("user-joined", {
       userId: user.id,
       nickname: user.nickname,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
-  
-  // 채팅방 퇴장
-  socket.on('leave-chat-room', (roomId) => {
-    socket.leave(`chat-${roomId}`);
-    logger.info(`${user.nickname}이 채팅방 ${roomId}에서 퇴장`);
-    
+
+  // 채팅방 입장 (별칭)
+  socket.on("join-chat", (roomId) => {
+    const room = `chat-${roomId}`;
+    socket.join(room);
+    const size = logRoomSize(room);
+    logger.info(
+      `${user.nickname}이 채팅방 ${roomId}에 입장(join-chat) (subscribers: ${size})`
+    );
+    socket.to(room).emit("user-joined", {
+      userId: user.id,
+      nickname: user.nickname,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // 채팅방 퇴장 (기존 이벤트명)
+  socket.on("leave-chat-room", (roomId) => {
+    const room = `chat-${roomId}`;
+    socket.leave(room);
+    const size = logRoomSize(room);
+    logger.info(
+      `${user.name}이 채팅방 ${roomId}에서 퇴장 (subscribers: ${size})`
+    );
+
     // 다른 사용자들에게 퇴장 알림
-    socket.to(`chat-${roomId}`).emit('user-left', {
+    socket.to(room).emit("user-left", {
       userId: user.id,
       nickname: user.nickname,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
-  
+
+  // 채팅방 퇴장 (별칭)
+  socket.on("leave-chat", (roomId) => {
+    const room = `chat-${roomId}`;
+    socket.leave(room);
+    const size = logRoomSize(room);
+    logger.info(
+      `${user.name}이 채팅방 ${roomId}에서 퇴장(leave-chat) (subscribers: ${size})`
+    );
+    socket.to(room).emit("user-left", {
+      userId: user.id,
+      nickname: user.nickname,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // 타이핑 상태 전송
-  socket.on('typing-start', (roomId) => {
-    socket.to(`chat-${roomId}`).emit('user-typing', {
+  socket.on("typing-start", (roomId) => {
+    const room = `chat-${roomId}`;
+    socket.to(room).emit("user-typing", {
       userId: user.id,
       nickname: user.nickname,
-      isTyping: true
+      isTyping: true,
     });
   });
-  
-  socket.on('typing-stop', (roomId) => {
-    socket.to(`chat-${roomId}`).emit('user-typing', {
+
+  socket.on("typing-stop", (roomId) => {
+    const room = `chat-${roomId}`;
+    socket.to(room).emit("user-typing", {
       userId: user.id,
       nickname: user.nickname,
-      isTyping: false
+      isTyping: false,
     });
   });
-  
+
   // 메시지 읽음 상태 업데이트
-  socket.on('message-read', (data) => {
-    socket.to(`chat-${data.roomId}`).emit('message-read-by', {
+  socket.on("message-read", (data) => {
+    const room = `chat-${data.roomId}`;
+    socket.to(room).emit("message-read-by", {
       userId: user.id,
       messageId: data.messageId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
-  
+
   // 연결 해제
-  socket.on('disconnect', () => {
+  socket.on("disconnect", () => {
     logger.info(`사용자 연결 해제됨: ${user.nickname} (${socket.id})`);
   });
-  
+
   // 에러 처리
-  socket.on('error', (error) => {
+  socket.on("error", (error) => {
     logger.error(`Socket error for user ${user.nickname}:`, error);
   });
 });

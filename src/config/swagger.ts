@@ -362,6 +362,12 @@ const swaggerDefinition = {
             example: "김테니스",
             description: "호스트 이름",
           },
+          hostId: {
+            type: "string",
+            format: "uuid",
+            example: "550e8400-e29b-41d4-a716-446655440000",
+            description: "호스트 사용자 ID",
+          },
           hostNtrp: {
             type: "string",
             example: "4.0",
@@ -411,6 +417,40 @@ const swaggerDefinition = {
             },
             example: ["샤워실", "락커", "매점"],
             description: "편의시설 목록",
+          },
+          confirmedParticipants: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                  description: "참가자 ID",
+                },
+                name: {
+                  type: "string",
+                  example: "김테니스",
+                  description: "참가자 이름",
+                },
+                ntrp: {
+                  type: "string",
+                  example: "4.0",
+                  description: "참가자 NTRP 레벨",
+                },
+                experience: {
+                  type: "string",
+                  example: "3년",
+                  description: "참가자 경력",
+                },
+                isHost: {
+                  type: "boolean",
+                  example: false,
+                  description: "호스트 여부",
+                },
+              },
+            },
+            description: "확정된 참가자 목록",
           },
         },
       },
@@ -1424,6 +1464,24 @@ const swaggerDefinition = {
               },
             },
             description: "매치 채팅방인 경우 매치 정보",
+          },
+          host: {
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                format: "uuid",
+              },
+              nickname: {
+                type: "string",
+                example: "HostPlayer",
+              },
+              profile_image_url: {
+                type: "string",
+                format: "uri",
+              },
+            },
+            description: "매치 채팅방인 경우 호스트 정보",
           },
           otherParticipant: {
             type: "object",

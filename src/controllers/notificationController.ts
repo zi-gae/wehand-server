@@ -55,8 +55,6 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
 
     const { data: notifications, error, count } = await query;
 
-    console.log("@@@count", error);
-
     if (error) {
       throw new ApiError(500, "알림 조회 실패", "DATABASE_ERROR");
     }

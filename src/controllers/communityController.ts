@@ -89,8 +89,6 @@ export const getPosts = async (req: Request, res: Response) => {
 
     const { data: posts, error, count } = await query;
 
-    console.log("@@@ error", error);
-
     if (error) {
       logger.error("게시글 조회 실패:", error);
       throw new ApiError(

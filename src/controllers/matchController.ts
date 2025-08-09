@@ -32,29 +32,67 @@ export const matchController = {
       experience_min,
       experience_max,
       sort,
+      user_lat,
+      user_lng,
     } = filters;
 
-    let query = supabase.from("active_matches").select(
-      `
-    id, title, venue_name, venue_address, court, match_date, start_time, end_time,
-    max_participants, current_participants, game_type, status,
-    host_name, host_ntrp, host_experience, description, price,
-    recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
-    created_at
-  `,
-      { count: "exact" }
-    );
+    let query;
+
+    // 거리순 정렬을 위해 venue location 정보가 필요한 경우
+    if (sort === "distance" && user_lat && user_lng) {
+      // matches와 venues를 직접 join하여 location 정보 포함
+      query = supabase
+        .from("matches")
+        .select(
+          `
+          id, title, host_id, venue_id, court, match_date, start_time, end_time,
+          max_participants, current_participants, game_type, status,
+          description, price,
+          recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
+          created_at,
+          venues!inner(id, name, address, location),
+          users!host_id(name, ntrp, experience_years)
+        `,
+          { count: "exact" }
+        )
+        .in("status", ["recruiting", "full", "confirmed"]);
+    } else {
+      // 기본 matches 테이블 조회 (host_id 포함)
+      query = supabase
+        .from("matches")
+        .select(
+          `
+        id, title, host_id, venue_id, court, match_date, start_time, end_time,
+        max_participants, current_participants, game_type, status,
+        description, price,
+        recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
+        created_at,
+        venues(name, address),
+        users(name, ntrp, experience_years)
+      `,
+          { count: "exact" }
+        )
+        .in("status", ["recruiting", "full", "confirmed"]);
+    }
 
     // 검색어 필터
     if (search) {
-      query = query.or(
-        `title.ilike.%${search}%,description.ilike.%${search}%,venue_name.ilike.%${search}%`
-      );
+      if (sort === "distance" && user_lat && user_lng) {
+        // 거리순 정렬 시 venues 조인 구조에 맞게 검색
+        query = query.or(
+          `title.ilike.%${search}%,description.ilike.%${search}%,venues.name.ilike.%${search}%`
+        );
+      } else {
+        // 기본 조회 시 venues 조인 구조에 맞게 검색
+        query = query.or(
+          `title.ilike.%${search}%,description.ilike.%${search}%,venues.name.ilike.%${search}%`
+        );
+      }
     }
 
     // 지역 필터
     if (region) {
-      query = query.ilike("venue_address", `%${region}%`);
+      query = query.ilike("venues.address", `%${region}%`);
     }
 
     // 게임 타입 필터
@@ -84,18 +122,16 @@ export const matchController = {
         query = query.lte("recruit_experience_min", experience_max);
     }
 
-    // 정렬
-    switch (sort) {
-      case "distance":
-        // 거리순 정렬은 클라이언트에서 처리 (사용자 위치 필요)
-        query = query.order("created_at", { ascending: false });
-        break;
-      case "price":
-        query = query.order("price", { ascending: true });
-        break;
-      default: // 'latest'
-        query = query.order("created_at", { ascending: false });
-        break;
+    // 정렬 (거리순이 아닌 경우)
+    if (sort !== "distance" || !user_lat || !user_lng) {
+      switch (sort) {
+        case "price":
+          query = query.order("price", { ascending: true });
+          break;
+        default: // 'latest'
+          query = query.order("created_at", { ascending: false });
+          break;
+      }
     }
 
     // 페이징 적용
@@ -109,25 +145,94 @@ export const matchController = {
       throw new ApiError(500, "매치 목록 조회 실패", "MATCH_LIST_FETCH_ERROR");
     }
 
+    let processedMatches = matches || [];
+
+    // 거리순 정렬이 요청된 경우 별도 처리
+    if (sort === "distance" && user_lat && user_lng) {
+      // 거리 계산을 위해 venue 좌표 정보 조회
+      const venueQuery = supabase
+        .from("venues")
+        .select("id, ST_X(location) as longitude, ST_Y(location) as latitude");
+
+      const { data: venueCoords } = await venueQuery;
+      const venueCoordMap = new Map();
+
+      if (venueCoords) {
+        venueCoords.forEach((venue: any) => {
+          venueCoordMap.set(venue.id, {
+            longitude: venue.longitude,
+            latitude: venue.latitude,
+          });
+        });
+      }
+
+      // 거리 계산 및 정렬
+      const matchesWithDistance = processedMatches.map((match: any) => {
+        const venueCoord = venueCoordMap.get(match.venue_id);
+        let distance = null;
+
+        if (venueCoord && venueCoord.latitude && venueCoord.longitude) {
+          distance = calculateDistance(
+            parseFloat(user_lat.toString()),
+            parseFloat(user_lng.toString()),
+            venueCoord.latitude,
+            venueCoord.longitude
+          );
+        }
+
+        return { ...match, calculated_distance: distance };
+      });
+
+      // 거리순으로 정렬
+      matchesWithDistance.sort((a, b) => {
+        const distA = a.calculated_distance ?? Infinity;
+        const distB = b.calculated_distance ?? Infinity;
+        return distA - distB;
+      });
+
+      processedMatches = matchesWithDistance;
+    }
+
     // 데이터 포맷팅
     const formattedMatches =
-      matches?.map((match) => ({
-        id: match.id,
-        title: match.title,
-        location: match.venue_name,
-        court: match.court,
-        date: formatMatchDate(match.match_date),
-        startTime: match.start_time.substring(0, 5),
-        endTime: match.end_time.substring(0, 5),
-        participants: `${match.current_participants}/${match.max_participants}`,
-        gameType: formatGameType(match.game_type),
-        level: formatNtrpLevel(match.recruit_ntrp_min, match.recruit_ntrp_max),
-        price: match.price ? formatPrice(match.price) : "무료",
-        status: match.status,
-        hostName: match.host_name,
-        description: match.description || "",
-        distance: null, // 클라이언트에서 계산
-      })) || [];
+      processedMatches?.map((match: any) => {
+        // 거리 정보가 계산된 경우 사용
+        let distance: number | null = match.calculated_distance || null;
+
+        return {
+          id: match.id,
+          title: match.title,
+          hostId: match.host_id, // 추가된 host_id
+          location:
+            match.venue_name ||
+            (match.venues &&
+              (Array.isArray(match.venues)
+                ? match.venues[0]?.name
+                : match.venues?.name)) ||
+            "",
+          court: match.court,
+          date: formatMatchDate(match.match_date),
+          startTime: match.start_time.substring(0, 5),
+          endTime: match.end_time.substring(0, 5),
+          participants: `${match.current_participants}/${match.max_participants}`,
+          gameType: formatGameType(match.game_type),
+          level: formatNtrpLevel(
+            match.recruit_ntrp_min,
+            match.recruit_ntrp_max
+          ),
+          price: match.price ? formatPrice(match.price) : "무료",
+          status: match.status,
+          hostName:
+            match.host_name ||
+            (match.users &&
+              (Array.isArray(match.users)
+                ? match.users[0]?.name
+                : match.users?.name)) ||
+            "",
+          description: match.description || "",
+          distance: distance ? `${distance.toFixed(1)}km` : null,
+        };
+      }) || [];
 
     const pagination = createPagination(page, limit, count || 0);
 
@@ -143,14 +248,16 @@ export const matchController = {
     const matchId = uuidSchema.parse(req.params.matchId);
 
     const { data: match, error } = await supabase
-      .from("active_matches")
+      .from("matches")
       .select(
         `
-        id, title, venue_name, venue_address, court, match_date, start_time, end_time,
+        id, title, host_id, court, match_date, start_time, end_time,
         max_participants, current_participants, game_type, status,
-        host_name, host_ntrp, host_experience, description, price,
+        description, price,
         recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
-        rules, equipment, parking_info, amenities
+        rules, equipment, parking_info,
+        venues(name, address, amenities),
+        users!host_id(name, ntrp, experience_years)
       `
       )
       .eq("id", matchId)
@@ -184,12 +291,21 @@ export const matchController = {
         isHost: p.is_host,
       })) || [];
 
+    // 조인된 데이터를 안전하게 추출
+    const venue =
+      match.venues &&
+      (Array.isArray(match.venues) ? match.venues[0] : match.venues);
+    const host =
+      match.users &&
+      (Array.isArray(match.users) ? match.users[0] : match.users);
+
     const formattedMatch = {
       id: match.id,
       title: match.title,
-      location: match.venue_name,
+      hostId: match.host_id, // 추가된 host_id
+      location: venue?.name || "",
       court: match.court,
-      address: match.venue_address,
+      address: venue?.address || "",
       date: formatMatchDate(match.match_date),
       startTime: match.start_time.substring(0, 5),
       endTime: match.end_time.substring(0, 5),
@@ -198,16 +314,16 @@ export const matchController = {
       level: formatNtrpLevel(match.recruit_ntrp_min, match.recruit_ntrp_max),
       price: match.price ? formatPrice(match.price) : "무료",
       status: match.status,
-      hostName: match.host_name,
-      hostNtrp: match.host_ntrp?.toString() || "미설정",
-      hostExperience: match.host_experience
-        ? `${match.host_experience}년`
+      hostName: host?.name || "",
+      hostNtrp: host?.ntrp?.toString() || "미설정",
+      hostExperience: host?.experience_years
+        ? `${host.experience_years}년`
         : "미설정",
       description: match.description || "",
       rules: match.rules || [],
       equipment: match.equipment || [],
       parking: match.parking_info || "",
-      amenities: match.amenities || [],
+      amenities: venue?.amenities || [],
       confirmedParticipants,
     };
 
@@ -481,48 +597,46 @@ export const matchController = {
     }
 
     const matchId = uuidSchema.parse(req.params.matchId);
-    const { type, name, participants } = req.body;
     const userId = req.user.id;
 
-    // 매치 존재 및 참가자 확인
-    const { data: participation } = await supabase
-      .from("match_participants")
-      .select("id")
-      .eq("match_id", matchId)
-      .eq("user_id", userId)
-      .eq("status", "confirmed")
+    // 매치 존재 확인
+    const { data: match, error: matchError } = await supabase
+      .from("matches")
+      .select("id, host_id")
+      .eq("id", matchId)
       .single();
 
-    if (!participation) {
-      throw new ApiError(
-        403,
-        "매치 참가자만 채팅방을 생성할 수 있습니다",
-        "NOT_MATCH_PARTICIPANT"
-      );
+    if (matchError || !match) {
+      throw new ApiError(404, "매치를 찾을 수 없습니다", "MATCH_NOT_FOUND");
     }
 
     // 기존 채팅방 확인
     const { data: existingChat } = await supabase
       .from("chat_rooms")
-      .select("id")
+      .select("id, name, type, match_id")
       .eq("match_id", matchId)
       .eq("type", "match")
       .single();
 
     if (existingChat) {
-      return ResponseHelper.error(
-        res,
-        "CHAT_ALREADY_EXISTS",
-        "이미 채팅방이 존재합니다",
-        409
-      );
+      return ResponseHelper.success(res, {
+        chatRoomId: existingChat.id,
+        success: true,
+        message: "이미 존재하는 채팅방입니다",
+        chatRoom: {
+          id: existingChat.id,
+          name: existingChat.name,
+          type: existingChat.type,
+          matchId: existingChat.match_id,
+        },
+      });
     }
 
     // 채팅방 생성
     const { data: chatRoom, error: chatError } = await supabase
       .from("chat_rooms")
       .insert({
-        name: name || `🎾 ${req.params.matchId} 매치 채팅방`,
+        name: `🎾 ${req.params.matchId} 매치 채팅방`,
         type: "match",
         match_id: matchId,
       })
@@ -538,21 +652,20 @@ export const matchController = {
       );
     }
 
-    // 매치 참가자들을 채팅방에 추가
-    const { data: matchParticipants } = await supabase
-      .from("match_participants")
-      .select("user_id")
-      .eq("match_id", matchId)
-      .eq("status", "confirmed");
+    // 채팅방 생성자를 admin으로 추가
+    await supabase.from("chat_participants").insert({
+      room_id: chatRoom.id,
+      user_id: userId,
+      role: "admin",
+    });
 
-    if (matchParticipants && matchParticipants.length > 0) {
-      const chatParticipants = matchParticipants.map((p) => ({
+    // 매치 호스트를 채팅방에 추가 (생성자가 호스트가 아닌 경우)
+    if (match.host_id !== userId) {
+      await supabase.from("chat_participants").insert({
         room_id: chatRoom.id,
-        user_id: p.user_id,
-        role: p.user_id === userId ? "admin" : "member",
-      }));
-
-      await supabase.from("chat_participants").insert(chatParticipants);
+        user_id: match.host_id,
+        role: "member",
+      });
     }
 
     logger.info("Match chat created:", { chatRoomId: chatRoom.id, matchId });
@@ -560,13 +673,13 @@ export const matchController = {
     return ResponseHelper.success(res, {
       chatRoomId: chatRoom.id,
       success: true,
-      message: "단체 채팅방이 생성되었습니다",
+      message: "채팅방이 생성되었습니다. 호스트가 승인하면 참가자가 됩니다",
       chatRoom: {
         id: chatRoom.id,
         name: chatRoom.name,
         type: chatRoom.type,
         matchId: chatRoom.match_id,
-        participants: matchParticipants?.length || 1,
+        participants: match.host_id === userId ? 1 : 2,
       },
     });
   }),

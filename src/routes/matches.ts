@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { matchController } from '../controllers/matchController';
-import { requireAuth, optionalAuth } from '../middleware/auth';
+import { Router } from "express";
+import { matchController } from "../controllers/matchController";
+import { requireAuth, optionalAuth } from "../middleware/auth";
 
 const router = Router();
 
@@ -34,6 +34,53 @@ const router = Router();
  *           format: date
  *         description: 날짜 (YYYY-MM-DD)
  *       - in: query
+ *         name: ntrp_min
+ *         schema:
+ *           type: number
+ *           minimum: 1.0
+ *           maximum: 7.0
+ *         description: 최소 NTRP 레벨
+ *       - in: query
+ *         name: ntrp_max
+ *         schema:
+ *           type: number
+ *           minimum: 1.0
+ *           maximum: 7.0
+ *         description: 최대 NTRP 레벨
+ *       - in: query
+ *         name: experience_min
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: 최소 경력 (년)
+ *       - in: query
+ *         name: experience_max
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: 최대 경력 (년)
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [latest, distance, price]
+ *           default: latest
+ *         description: 정렬 기준 (latest=최신순, distance=거리순, price=가격순)
+ *       - in: query
+ *         name: user_lat
+ *         schema:
+ *           type: number
+ *           minimum: -90
+ *           maximum: 90
+ *         description: 사용자 위도 (거리순 정렬 시 필수)
+ *       - in: query
+ *         name: user_lng
+ *         schema:
+ *           type: number
+ *           minimum: -180
+ *           maximum: 180
+ *         description: 사용자 경도 (거리순 정렬 시 필수)
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -62,11 +109,51 @@ const router = Router();
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Match'
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       title:
+ *                         type: string
+ *                       location:
+ *                         type: string
+ *                       court:
+ *                         type: string
+ *                       date:
+ *                         type: string
+ *                       startTime:
+ *                         type: string
+ *                       endTime:
+ *                         type: string
+ *                       participants:
+ *                         type: string
+ *                         example: "2/4"
+ *                       gameType:
+ *                         type: string
+ *                       level:
+ *                         type: string
+ *                       price:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       hostName:
+ *                         type: string
+ *                       hostId:
+ *                         type: string
+ *                         format: uuid
+ *                         description: "호스트 사용자 ID"
+ *                       description:
+ *                         type: string
+ *                       distance:
+ *                         type: string
+ *                         nullable: true
+ *                         example: "1.2km"
+ *                         description: "사용자 위치에서의 거리 (거리순 정렬 시에만 제공)"
  *                 pagination:
  *                   $ref: '#/components/schemas/PaginationInfo'
  */
-router.get('/', optionalAuth, matchController.getMatches);
+router.get("/", optionalAuth, matchController.getMatches);
 
 /**
  * @swagger
@@ -109,7 +196,7 @@ router.get('/', optionalAuth, matchController.getMatches);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/', requireAuth, matchController.createMatch);
+router.post("/", requireAuth, matchController.createMatch);
 
 /**
  * @swagger
@@ -145,7 +232,7 @@ router.post('/', requireAuth, matchController.createMatch);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:matchId', optionalAuth, matchController.getMatchDetail);
+router.get("/:matchId", optionalAuth, matchController.getMatchDetail);
 
 /**
  * @swagger
@@ -195,7 +282,7 @@ router.get('/:matchId', optionalAuth, matchController.getMatchDetail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/:matchId/join', requireAuth, matchController.joinMatch);
+router.post("/:matchId/join", requireAuth, matchController.joinMatch);
 
 /**
  * @swagger
@@ -240,7 +327,7 @@ router.post('/:matchId/join', requireAuth, matchController.joinMatch);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/:matchId/share', matchController.shareMatch);
+router.post("/:matchId/share", matchController.shareMatch);
 
 /**
  * @swagger
@@ -316,8 +403,12 @@ router.post('/:matchId/share', matchController.shareMatch);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/:matchId/bookmark', requireAuth, matchController.bookmarkMatch);
-router.delete('/:matchId/bookmark', requireAuth, matchController.unbookmarkMatch);
+router.post("/:matchId/bookmark", requireAuth, matchController.bookmarkMatch);
+router.delete(
+  "/:matchId/bookmark",
+  requireAuth,
+  matchController.unbookmarkMatch
+);
 
 /**
  * @swagger
@@ -375,6 +466,6 @@ router.delete('/:matchId/bookmark', requireAuth, matchController.unbookmarkMatch
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/:matchId/chat', requireAuth, matchController.createMatchChat);
+router.post("/:matchId/chat", requireAuth, matchController.createMatchChat);
 
 export default router;
