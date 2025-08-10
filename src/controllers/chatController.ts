@@ -416,6 +416,7 @@ export const getChatRoom = async (req: AuthRequest, res: Response) => {
         .select("id, title, match_date, host_id")
         .eq("id", chatRoom.match_id)
         .single();
+
       matchInfo = match;
 
       // 호스트 정보 조회
@@ -1152,15 +1153,14 @@ export const leaveChatRoom = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 매치 채팅방에서 호스트가 참가자 승인
+// 1:1 채팅방에서 매치 참가 확정 (채팅방 기반)
 export const approveMatchParticipant = async (
   req: AuthRequest,
   res: Response
 ) => {
   try {
     const { chatRoomId } = req.params;
-    const { userId: participantUserId } = req.body; // 승인할 참가자 ID
-    const hostUserId = req.userId!; // 호스트 ID
+    const currentUserId = req.userId!;
 
     // 채팅방 정보 및 매치 정보 조회
     const { data: chatRoom } = await supabase
@@ -1172,14 +1172,30 @@ export const approveMatchParticipant = async (
       `
       )
       .eq("id", chatRoomId)
-      .eq("type", "match")
       .single();
 
-    if (!chatRoom || !chatRoom.matches) {
+    if (!chatRoom) {
       throw new ApiError(
         404,
-        "매치 채팅방을 찾을 수 없습니다",
+        "채팅방을 찾을 수 없습니다",
         "CHATROOM_NOT_FOUND"
+      );
+    }
+
+    // 1:1 채팅방이 아닌 경우 에러
+    if (chatRoom.type !== "private") {
+      throw new ApiError(
+        400,
+        "1:1 채팅방에서만 확정 처리가 가능합니다",
+        "INVALID_CHATROOM_TYPE"
+      );
+    }
+
+    if (!chatRoom.matches) {
+      throw new ApiError(
+        404,
+        "매치 정보를 찾을 수 없습니다",
+        "MATCH_NOT_FOUND"
       );
     }
 
@@ -1187,8 +1203,38 @@ export const approveMatchParticipant = async (
       ? chatRoom.matches[0]
       : chatRoom.matches;
 
-    // 호스트 권한 확인
-    if (match.host_id !== hostUserId) {
+    // 채팅방 참가자 조회 (나와 상대방)
+    const { data: participants } = await supabase
+      .from("chat_participants")
+      .select("user_id")
+      .eq("room_id", chatRoomId)
+      .eq("is_active", true);
+
+    if (!participants || participants.length !== 2) {
+      throw new ApiError(
+        400,
+        "올바른 1:1 채팅방이 아닙니다",
+        "INVALID_PARTICIPANTS"
+      );
+    }
+
+    // 상대방 ID 찾기
+    const otherUserId = participants.find(p => p.user_id !== currentUserId)?.user_id;
+    if (!otherUserId) {
+      throw new ApiError(
+        400,
+        "상대방을 찾을 수 없습니다",
+        "OTHER_USER_NOT_FOUND"
+      );
+    }
+
+    // 호스트와 참가자 구분
+    const isHost = match.host_id === currentUserId;
+    const participantUserId = isHost ? otherUserId : currentUserId;
+    const hostUserId = isHost ? currentUserId : otherUserId;
+
+    // 호스트만 승인 가능
+    if (!isHost) {
       throw new ApiError(
         403,
         "매치 호스트만 참가자를 승인할 수 있습니다",
@@ -1202,7 +1248,7 @@ export const approveMatchParticipant = async (
       .select("id, status")
       .eq("match_id", match.id)
       .eq("user_id", participantUserId)
-      .single();
+      .maybeSingle();
 
     if (!participation) {
       throw new ApiError(
@@ -1221,7 +1267,7 @@ export const approveMatchParticipant = async (
     }
 
     // 매치 정원 확인
-    if (match.current_participants >= match.max_participants) {
+    if (match.current_participants - 1 >= match.max_participants) {
       throw new ApiError(400, "매치 정원이 이미 마감되었습니다", "MATCH_FULL");
     }
 
@@ -1342,15 +1388,11 @@ export const approveMatchParticipant = async (
   }
 };
 
-// 매치 참가 확정 취소 (호스트 전용)
-export const cancelMatchApproval = async (
-  req: AuthRequest,
-  res: Response
-) => {
+// 매치 참가 확정 취소 (호스트 전용, 채팅방 기반)
+export const cancelMatchApproval = async (req: AuthRequest, res: Response) => {
   try {
     const { chatRoomId } = req.params;
-    const { userId: participantUserId } = req.body; // 취소할 참가자 ID
-    const hostUserId = req.userId!; // 호스트 ID
+    const currentUserId = req.userId!;
 
     // 채팅방 정보 및 매치 정보 조회
     const { data: chatRoom } = await supabase
@@ -1362,14 +1404,30 @@ export const cancelMatchApproval = async (
       `
       )
       .eq("id", chatRoomId)
-      .eq("type", "match")
       .single();
 
-    if (!chatRoom || !chatRoom.matches) {
+    if (!chatRoom) {
       throw new ApiError(
         404,
-        "매치 채팅방을 찾을 수 없습니다",
+        "채팅방을 찾을 수 없습니다",
         "CHATROOM_NOT_FOUND"
+      );
+    }
+
+    // 1:1 채팅방이 아닌 경우 에러
+    if (chatRoom.type !== "private") {
+      throw new ApiError(
+        400,
+        "1:1 채팅방에서만 확정 취소가 가능합니다",
+        "INVALID_CHATROOM_TYPE"
+      );
+    }
+
+    if (!chatRoom.matches) {
+      throw new ApiError(
+        404,
+        "매치 정보를 찾을 수 없습니다",
+        "MATCH_NOT_FOUND"
       );
     }
 
@@ -1378,11 +1436,36 @@ export const cancelMatchApproval = async (
       : chatRoom.matches;
 
     // 호스트 권한 확인
-    if (match.host_id !== hostUserId) {
+    if (match.host_id !== currentUserId) {
       throw new ApiError(
         403,
         "매치 호스트만 참가 확정을 취소할 수 있습니다",
         "NOT_HOST"
+      );
+    }
+
+    // 채팅방 참가자 조회 (나와 상대방)
+    const { data: participants } = await supabase
+      .from("chat_participants")
+      .select("user_id")
+      .eq("room_id", chatRoomId)
+      .eq("is_active", true);
+
+    if (!participants || participants.length !== 2) {
+      throw new ApiError(
+        400,
+        "올바른 1:1 채팅방이 아닙니다",
+        "INVALID_PARTICIPANTS"
+      );
+    }
+
+    // 상대방 ID 찾기
+    const participantUserId = participants.find(p => p.user_id !== currentUserId)?.user_id;
+    if (!participantUserId) {
+      throw new ApiError(
+        400,
+        "상대방을 찾을 수 없습니다",
+        "OTHER_USER_NOT_FOUND"
       );
     }
 

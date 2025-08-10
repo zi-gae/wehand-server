@@ -69,10 +69,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
         .eq("winner_id", userId),
 
       // 리뷰 정보
-      supabase
-        .from("match_reviews")
-        .select("rating")
-        .eq("reviewee_id", userId),
+      supabase.from("match_reviews").select("rating").eq("reviewee_id", userId),
     ]);
 
     if (matchesError || winsError || reviewsError) {
@@ -94,8 +91,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
     const negativeReviews = reviews?.filter((r) => r.rating < 3).length || 0;
     const avgRating =
       totalReviews > 0 && reviews
-        ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-          totalReviews
+        ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / totalReviews
         : null;
 
     res.json({
@@ -180,7 +176,13 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       .eq("id", userId);
 
     if (error) {
-      throw new ApiError(500, "프로필 수정 실패", "DATABASE_ERROR", true, error);
+      throw new ApiError(
+        500,
+        "프로필 수정 실패",
+        "DATABASE_ERROR",
+        true,
+        error
+      );
     }
 
     res.json({
@@ -270,8 +272,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
     const negativeReviews = reviews?.filter((r) => r.rating < 3).length || 0;
     const avgRating =
       totalReviews > 0 && reviews
-        ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-          totalReviews
+        ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / totalReviews
         : null;
 
     res.json({
@@ -370,7 +371,13 @@ export const getMyMatches = async (req: AuthRequest, res: Response) => {
     const { data: matchParticipants, error, count } = await query;
 
     if (error) {
-      throw new ApiError(500, "매치 기록 조회 실패", "DATABASE_ERROR", true, error);
+      throw new ApiError(
+        500,
+        "매치 기록 조회 실패",
+        "DATABASE_ERROR",
+        true,
+        error
+      );
     }
 
     const totalPages = Math.ceil((count || 0) / Number(limit));
@@ -433,6 +440,7 @@ export const getMyReviews = async (req: AuthRequest, res: Response) => {
         reviewer:reviewer_id(
           id,
           nickname,
+          name,
           profile_image_url
         ),
         match:match_id(
@@ -533,7 +541,13 @@ export const getBookmarkedMatches = async (req: AuthRequest, res: Response) => {
       .range(offset, offset + Number(limit) - 1);
 
     if (error) {
-      throw new ApiError(500, "북마크 조회 실패", "DATABASE_ERROR", true, error);
+      throw new ApiError(
+        500,
+        "북마크 조회 실패",
+        "DATABASE_ERROR",
+        true,
+        error
+      );
     }
 
     const totalPages = Math.ceil((count || 0) / Number(limit));

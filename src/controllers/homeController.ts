@@ -53,23 +53,37 @@ export const homeController = {
       );
     }
 
-    // 다가오는 매치 조회 (참가 중이거나 호스트인 매치)
+    // 다가오는 매치 조회 (호스트이거나 참가자인 미래 매치만)
+    const currentDate = formatDate(now, "date");
+    const currentTime = now.toTimeString().substring(0, 8); // HH:MM:SS
+
+    console.log(`현재 날짜: ${currentDate}, 현재 시간: ${currentTime}`);
+
+    // OR 조건들을 and(...) 묶음으로 조합해 과거 매치 제외
+    const participatingIdsCsv = await getUserParticipatingMatches(userId); // 빈 문자열이면 참가자 조건 생략
+    const orClauses: string[] = [
+      // 호스트 & 미래
+      `and(host_id.eq.${userId},match_date.gt.${currentDate})`,
+      `and(host_id.eq.${userId},match_date.eq.${currentDate},start_time.gt.${currentTime})`,
+    ];
+    if (participatingIdsCsv) {
+      orClauses.push(
+        `and(id.in.(${participatingIdsCsv}),match_date.gt.${currentDate})`,
+        `and(id.in.(${participatingIdsCsv}),match_date.eq.${currentDate},start_time.gt.${currentTime})`
+      );
+    }
+
     const { data: upcomingMatches, error: matchError } = await supabase
-      .from("active_matches") // 뷰 사용
+      .from("active_matches")
       .select(
         `
         id, title, venue_name, court, match_date, start_time, end_time,
-        max_participants, current_participants, game_type, status,
+        max_participants, game_type, status,
         host_name, host_ntrp, host_experience, description, price,
         recruit_ntrp_min, recruit_ntrp_max
       `
       )
-      .or(
-        `host_id.eq.${userId},id.in.(${await getUserParticipatingMatches(
-          userId
-        )})`
-      )
-      .gte("match_date", formatDate(now, "date"))
+      .or(orClauses.join(","))
       .order("match_date", { ascending: true })
       .order("start_time", { ascending: true })
       .limit(10);
@@ -78,24 +92,50 @@ export const homeController = {
       throw new ApiError(500, "매치 정보 조회 실패", "MATCH_FETCH_ERROR");
     }
 
+    // 각 매치의 확정된 참가자 수 조회
+    const matchIds = upcomingMatches?.map((match: any) => match.id) || [];
+    let participantCounts: Map<string, number> = new Map();
+
+    if (matchIds.length > 0) {
+      const { data: participantData } = await supabase
+        .from("match_participants")
+        .select("match_id")
+        .in("match_id", matchIds)
+        .eq("status", "confirmed")
+        .eq("is_host", false); // 호스트 제외
+
+      // 각 매치별 확정된 참가자 수 계산 (호스트 제외)
+      participantData?.forEach((p: any) => {
+        const currentCount = participantCounts.get(p.match_id) || 0;
+        participantCounts.set(p.match_id, currentCount + 1);
+      });
+    }
+
     // 매치 데이터 포맷팅
     const formattedMatches =
-      upcomingMatches?.map((match) => ({
-        id: match.id,
-        title: match.title,
-        location: match.venue_name,
-        court: match.court,
-        date: formatMatchDate(match.match_date),
-        startTime: match.start_time.substring(0, 5), // HH:MM
-        endTime: match.end_time.substring(0, 5),
-        participants: `${match.current_participants}/${match.max_participants}`,
-        gameType: formatGameType(match.game_type),
-        level: formatNtrpLevel(match.recruit_ntrp_min, match.recruit_ntrp_max),
-        price: match.price ? formatPrice(match.price) : "무료",
-        status: match.status,
-        hostName: match.host_name,
-        description: match.description || "",
-      })) || [];
+      upcomingMatches?.map((match) => {
+        const actualParticipants = participantCounts.get(match.id) || 0; // 확정 참가자 수 (호스트 제외)
+        const maxParticipantsExcludingHost = match.max_participants; // 이미 호스트 제외된 값이라 가정
+        return {
+          id: match.id,
+          title: match.title,
+          location: match.venue_name,
+          court: match.court,
+          date: formatMatchDate(match.match_date),
+          startTime: match.start_time.substring(0, 5),
+          endTime: match.end_time.substring(0, 5),
+          participants: `${actualParticipants}/${maxParticipantsExcludingHost}`,
+          gameType: formatGameType(match.game_type),
+          level: formatNtrpLevel(
+            match.recruit_ntrp_min,
+            match.recruit_ntrp_max
+          ),
+          price: match.price ? formatPrice(match.price) : "무료",
+          status: match.status,
+          hostName: match.host_name,
+          description: match.description || "",
+        };
+      }) || [];
 
     return ResponseHelper.success(res, {
       user: {
@@ -116,7 +156,7 @@ async function getUserParticipatingMatches(userId: string): Promise<string> {
     .eq("user_id", userId)
     .eq("status", "confirmed");
 
-  if (!data || data.length === 0) return "";
+  if (!data || data.length === 0) return ""; // 빈 문자열이면 상위에서 조건 생략
 
   return data.map((p) => p.match_id).join(",");
 }
@@ -147,7 +187,6 @@ function formatNtrpLevel(minNtrp?: number, maxNtrp?: number): string {
   if (!minNtrp) return `~${maxNtrp}`;
   if (!maxNtrp) return `${minNtrp}~`;
 
-  // NTRP 범위에 따른 레벨명
   const avgNtrp = (minNtrp + maxNtrp) / 2;
   if (avgNtrp <= 2.5) return "초급";
   if (avgNtrp <= 3.5) return "초중급";

@@ -90,8 +90,8 @@ export const matchCreateSchema = z
     max_participants: z
       .number()
       .int()
-      .min(2)
-      .max(8, "참가자는 2-8명 사이여야 합니다"),
+      .min(1)
+      .max(10, "참가자는 1-10명 사이여야 합니다"),
     recruit_ntrp_min: z.number().min(1.0).max(7.0).optional(),
     recruit_ntrp_max: z.number().min(1.0).max(7.0).optional(),
     recruit_experience_min: z.number().int().min(0).optional(),

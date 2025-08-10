@@ -201,6 +201,26 @@ const swaggerDefinition = {
             example: "공격적 베이스라인",
             description: "선호하는 플레이 스타일",
           },
+          totalReviews: {
+            type: "integer",
+            example: 12,
+            description: "받은 리뷰 총 개수",
+          },
+          positiveReviews: {
+            type: "integer",
+            example: 9,
+            description: "긍정적 리뷰 수",
+          },
+          negativeReviews: {
+            type: "integer",
+            example: 3,
+            description: "부정적 리뷰 수",
+          },
+          reviewNtrp: {
+            type: "number",
+            example: 4.2,
+            description: "리뷰 기반 평균 NTRP",
+          },
         },
       },
 
@@ -1208,6 +1228,131 @@ const swaggerDefinition = {
         },
       },
 
+      // =============================================
+      // 리뷰 관련 스키마
+      // =============================================
+      ReviewableMatch: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid",
+            description: "매치 ID",
+            example: "123e4567-e89b-12d3-a456-426614174000",
+          },
+          title: {
+            type: "string",
+            description: "매치 제목",
+            example: "즐거운 주말 단식",
+          },
+          matchDate: {
+            type: "string",
+            format: "date",
+            description: "매치 날짜",
+            example: "2024-01-15",
+          },
+          location: {
+            type: "string",
+            description: "코트 이름",
+            example: "강남테니스장",
+          },
+          address: {
+            type: "string",
+            description: "코트 주소",
+            example: "서울시 강남구 테헤란로 123",
+          },
+          gameType: {
+            type: "string",
+            description: "경기 형태",
+            example: "단식",
+          },
+          participants: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/ReviewableParticipant",
+            },
+            description: "참가자 목록",
+          },
+        },
+        required: [
+          "id",
+          "title",
+          "matchDate",
+          "location",
+          "gameType",
+          "participants",
+        ],
+      },
+
+      ReviewableParticipant: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid",
+            description: "사용자 ID",
+            example: "123e4567-e89b-12d3-a456-426614174001",
+          },
+          name: {
+            type: "string",
+            description: "사용자 이름",
+            example: "김테니스",
+          },
+          nickname: {
+            type: "string",
+            description: "사용자 닉네임",
+            example: "TennisKing",
+          },
+          ntrp: {
+            type: "number",
+            format: "float",
+            minimum: 1.0,
+            maximum: 7.0,
+            description: "NTRP 레벨",
+            example: 4.0,
+          },
+          hasReviewed: {
+            type: "boolean",
+            description: "이미 리뷰했는지 여부",
+            example: false,
+          },
+        },
+        required: ["id", "name", "ntrp", "hasReviewed"],
+      },
+
+      SubmitReviewRequest: {
+        type: "object",
+        properties: {
+          revieweeId: {
+            type: "string",
+            format: "uuid",
+            description: "리뷰 대상자 ID",
+            example: "123e4567-e89b-12d3-a456-426614174001",
+          },
+          ntrp: {
+            type: "number",
+            format: "float",
+            minimum: 1.0,
+            maximum: 7.0,
+            multipleOf: 0.5,
+            description: "NTRP 레벨 평가 (0.5 단위)",
+            example: 4.0,
+          },
+          isPositive: {
+            type: "boolean",
+            description: "긍정적 리뷰 여부 (true: 좋아요, false: 싫어요)",
+            example: true,
+          },
+          comment: {
+            type: "string",
+            description: "리뷰 코멘트 (선택사항)",
+            example: "매너가 좋으시고 실력도 뛰어나셔서 즐거운 경기였습니다.",
+            maxLength: 500,
+          },
+        },
+        required: ["revieweeId", "ntrp", "isPositive"],
+      },
+
       Review: {
         type: "object",
         properties: {
@@ -1228,35 +1373,10 @@ const swaggerDefinition = {
             example: "매너가 좋으시고 실력도 뛰어나셔서 즐거운 경기였습니다.",
             description: "리뷰 내용",
           },
-          ntrp_evaluation: {
-            type: "number",
-            format: "float",
-            minimum: 1.0,
-            maximum: 7.0,
-            example: 4.0,
-            description: "NTRP 레벨 평가 (1.0-7.0)",
-          },
-          created_at: {
+          createdAt: {
             type: "string",
             format: "date-time",
             description: "작성일시",
-          },
-          reviewer: {
-            type: "object",
-            properties: {
-              id: {
-                type: "string",
-                format: "uuid",
-              },
-              nickname: {
-                type: "string",
-                example: "TennisPlayer",
-              },
-              profile_image_url: {
-                type: "string",
-                format: "uri",
-              },
-            },
           },
           match: {
             type: "object",
@@ -1269,9 +1389,22 @@ const swaggerDefinition = {
                 type: "string",
                 example: "즐거운 주말 단식",
               },
-              match_date: {
+              date: {
                 type: "string",
                 format: "date",
+              },
+            },
+          },
+          reviewer: {
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                format: "uuid",
+              },
+              name: {
+                type: "string",
+                example: "TennisPlayer",
               },
             },
           },
@@ -1730,6 +1863,10 @@ const swaggerDefinition = {
     {
       name: "Chat",
       description: "채팅 API - 실시간 채팅 및 채팅방 관리",
+    },
+    {
+      name: "Review",
+      description: "리뷰 API - 매치 리뷰 작성 및 조회",
     },
   ],
 };

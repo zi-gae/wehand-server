@@ -468,4 +468,62 @@ router.delete(
  */
 router.post("/:matchId/chat", requireAuth, matchController.createMatchChat);
 
+/**
+ * @swagger
+ * /api/matches/{matchId}/chat/private:
+ *   post:
+ *     summary: 매치 호스트와 1:1 채팅방 생성
+ *     tags: [Matches]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: matchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 매치 ID
+ *     responses:
+ *       201:
+ *         description: 1:1 채팅방 생성 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chatRoomId:
+ *                       type: string
+ *                       format: uuid
+ *                       description: '채팅방 ID'
+ *                     message:
+ *                       type: string
+ *                       example: '1:1 채팅방이 생성되었습니다'
+ *       400:
+ *         description: 자신과는 채팅방 생성 불가
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: 인증 필요
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: 매치를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/:matchId/chat/private", requireAuth, matchController.createPrivateChat);
+
 export default router;

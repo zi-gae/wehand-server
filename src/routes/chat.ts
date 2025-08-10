@@ -455,7 +455,8 @@ router.post(
  * @swagger
  * /api/chat/rooms/{chatRoomId}/approve:
  *   post:
- *     summary: 매치 참가자 승인 (호스트 전용)
+ *     summary: 매치 참가자 승인 (호스트 전용, 1:1 채팅방 기반)
+ *     description: 1:1 채팅방에서 매치 호스트가 상대방 참가자를 승인합니다. 채팅방 참가자를 자동으로 식별하므로 별도의 사용자 ID 입력이 불필요합니다.
  *     tags: [Chat]
  *     security:
  *       - BearerAuth: []
@@ -466,20 +467,7 @@ router.post(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: 매치 채팅방 ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               userId:
- *                 type: string
- *                 format: uuid
- *                 description: 승인할 참가자의 사용자 ID
- *             required:
- *               - userId
+ *         description: 1:1 채팅방 ID (매치와 연관된 private 타입 채팅방)
  *     responses:
  *       200:
  *         description: 참가자 승인 성공
@@ -500,23 +488,52 @@ router.post(
  *                     participantId:
  *                       type: string
  *                       format: uuid
+ *                       description: 승인된 참가자의 사용자 ID
  *                     matchId:
  *                       type: string
  *                       format: uuid
+ *                       description: 관련 매치 ID
  *       400:
- *         description: 잘못된 요청 (정원 초과, 유효하지 않은 상태 등)
+ *         description: 잘못된 요청 (1:1 채팅방이 아님, 정원 초과, 유효하지 않은 상태 등)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalidChatRoomType:
+ *                 summary: 잘못된 채팅방 타입
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: INVALID_CHATROOM_TYPE
+ *                     message: 1:1 채팅방에서만 확정 처리가 가능합니다
+ *               matchFull:
+ *                 summary: 매치 정원 초과
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: MATCH_FULL
+ *                     message: 매치 정원이 이미 마감되었습니다
+ *               invalidStatus:
+ *                 summary: 유효하지 않은 참가 상태
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: INVALID_STATUS
+ *                     message: 대기 중인 참가 신청만 승인할 수 있습니다
  *       403:
  *         description: 호스트가 아니거나 권한 없음
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: NOT_HOST
+ *                 message: 매치 호스트만 참가자를 승인할 수 있습니다
  *       404:
- *         description: 채팅방 또는 참가 신청을 찾을 수 없음
+ *         description: 채팅방, 매치 또는 참가 신청을 찾을 수 없음
  *         content:
  *           application/json:
  *             schema:
@@ -532,7 +549,8 @@ router.post(
  * @swagger
  * /api/chat/rooms/{chatRoomId}/cancel-approval:
  *   post:
- *     summary: 매치 참가자 승인 취소 (호스트 전용)
+ *     summary: 매치 참가자 승인 취소 (호스트 전용, 1:1 채팅방 기반)
+ *     description: 1:1 채팅방에서 매치 호스트가 상대방 참가자의 확정을 취소합니다. 채팅방 참가자를 자동으로 식별하므로 별도의 사용자 ID 입력이 불필요합니다.
  *     tags: [Chat]
  *     security:
  *       - BearerAuth: []
@@ -543,20 +561,7 @@ router.post(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: 매치 채팅방 ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               userId:
- *                 type: string
- *                 format: uuid
- *                 description: 승인을 취소할 참가자의 사용자 ID
- *             required:
- *               - userId
+ *         description: 1:1 채팅방 ID (매치와 연관된 private 타입 채팅방)
  *     responses:
  *       200:
  *         description: 참가자 승인 취소 성공
@@ -573,27 +578,49 @@ router.post(
  *                   properties:
  *                     message:
  *                       type: string
- *                       example: 참가 승인이 취소되었습니다
+ *                       example: 참가 확정이 취소되었습니다
  *                     participantId:
  *                       type: string
  *                       format: uuid
+ *                       description: 취소된 참가자의 사용자 ID
  *                     matchId:
  *                       type: string
  *                       format: uuid
+ *                       description: 관련 매치 ID
  *       400:
- *         description: 잘못된 요청 (이미 pending 상태, 유효하지 않은 상태 등)
+ *         description: 잘못된 요청 (1:1 채팅방이 아님, 이미 pending 상태, 유효하지 않은 상태 등)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalidChatRoomType:
+ *                 summary: 잘못된 채팅방 타입
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: INVALID_CHATROOM_TYPE
+ *                     message: 1:1 채팅방에서만 확정 취소가 가능합니다
+ *               invalidStatus:
+ *                 summary: 유효하지 않은 참가 상태
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: INVALID_STATUS
+ *                     message: 확정된 참가 신청만 취소할 수 있습니다
  *       403:
  *         description: 호스트가 아니거나 권한 없음
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: NOT_HOST
+ *                 message: 매치 호스트만 참가 확정을 취소할 수 있습니다
  *       404:
- *         description: 채팅방 또는 참가자를 찾을 수 없음
+ *         description: 채팅방, 매치 또는 참가 신청을 찾을 수 없음
  *         content:
  *           application/json:
  *             schema:

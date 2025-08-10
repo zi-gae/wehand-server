@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { authController } from '../controllers/authController';
-import { requireAuth } from '../middleware/auth';
-import { authRateLimit } from '../middleware/security';
+import { Router } from "express";
+import { authController } from "../controllers/authController";
+import { requireAuth } from "../middleware/auth";
+import { authRateLimit } from "../middleware/security";
 
 const router = Router();
 
@@ -34,7 +34,7 @@ router.use(authRateLimit);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/login', authController.login);
+router.post("/login", authController.login);
 
 /**
  * @swagger
@@ -62,35 +62,7 @@ router.post('/login', authController.login);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/refresh', authController.refresh);
-
-/**
- * @swagger
- * /api/auth/kakao:
- *   post:
- *     summary: 카카오 로그인
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/KakaoLoginRequest'
- *     responses:
- *       200:
- *         description: 카카오 로그인 성공
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/LoginResponse'
- *       400:
- *         description: 잘못된 카카오 인증 코드
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.post('/kakao', authController.kakaoLogin);
+router.post("/refresh", authController.refresh);
 
 /**
  * @swagger
@@ -114,7 +86,7 @@ router.post('/kakao', authController.kakaoLogin);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/logout', requireAuth, authController.logout);
+router.post("/logout", requireAuth, authController.logout);
 
 /**
  * @swagger
@@ -142,7 +114,7 @@ router.post('/logout', requireAuth, authController.logout);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/signup', authController.signup);
+router.post("/signup", authController.signup);
 
 /**
  * @swagger
@@ -164,7 +136,27 @@ router.post('/signup', authController.signup);
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string, format: uuid }
+ *                     email: { type: string, format: email }
+ *                     name: { type: string }
+ *                     nickname: { type: string }
+ *                     location: { type: string }
+ *                     bio: { type: string }
+ *                     profile_image_url: { type: string, format: uri }
+ *                     ntrp: { type: number, example: 4.0 }
+ *                     experience_years: { type: integer, example: 3 }
+ *                     favorite_style: { type: string }
+ *                     created_at: { type: string, format: date-time }
+ *                     total_matches: { type: integer }
+ *                     wins: { type: integer }
+ *                     losses: { type: integer }
+ *                     win_rate: { type: number, example: 55.5 }
+ *                     total_reviews: { type: integer, example: 12 }
+ *                     positive_reviews: { type: integer, example: 9 }
+ *                     negative_reviews: { type: integer, example: 3 }
+ *                     review_ntrp: { type: number, example: 4.2, description: "리뷰 기반 NTRP 평균" }
  *       401:
  *         description: 인증 필요
  *         content:
@@ -172,6 +164,6 @@ router.post('/signup', authController.signup);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/me', requireAuth, authController.me);
+router.get("/me", requireAuth, authController.me);
 
 export default router;

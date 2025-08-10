@@ -116,7 +116,6 @@ io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
 
-    console.log("@@@socket.handshake", socket.handshake);
     if (!token) {
       return next(new Error("인증 토큰이 필요합니다"));
     }

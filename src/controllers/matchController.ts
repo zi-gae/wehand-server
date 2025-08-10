@@ -193,11 +193,35 @@ export const matchController = {
       processedMatches = matchesWithDistance;
     }
 
+    // 각 매치의 확정된 참가자 수 조회
+    const matchIds = processedMatches?.map((match: any) => match.id) || [];
+    let participantCounts: Map<string, number> = new Map();
+
+    if (matchIds.length > 0) {
+      const { data: participantData } = await supabase
+        .from("match_participants")
+        .select("match_id")
+        .in("match_id", matchIds)
+        .eq("status", "confirmed")
+        .eq("is_host", false); // 호스트 제외
+
+      // 각 매치별 확정된 참가자 수 계산 (호스트 제외)
+      participantData?.forEach((p: any) => {
+        const currentCount = participantCounts.get(p.match_id) || 0;
+        participantCounts.set(p.match_id, currentCount + 1);
+      });
+    }
+
     // 데이터 포맷팅
     const formattedMatches =
       processedMatches?.map((match: any) => {
         // 거리 정보가 계산된 경우 사용
         let distance: number | null = match.calculated_distance || null;
+
+        // 실제 확정된 참가자 수 사용 (호스트 제외)
+        const actualParticipants = participantCounts.get(match.id) || 0;
+        // 최대 참가자 수에서도 호스트 제외 (단, 최소 1은 보장)
+        const maxParticipantsExcludingHost = match.max_participants;
 
         return {
           id: match.id,
@@ -214,7 +238,7 @@ export const matchController = {
           date: formatMatchDate(match.match_date),
           startTime: match.start_time.substring(0, 5),
           endTime: match.end_time.substring(0, 5),
-          participants: `${match.current_participants}/${match.max_participants}`,
+          participants: `${actualParticipants}/${maxParticipantsExcludingHost}`,
           gameType: formatGameType(match.game_type),
           level: formatNtrpLevel(
             match.recruit_ntrp_min,
@@ -252,7 +276,7 @@ export const matchController = {
       .select(
         `
         id, title, host_id, court, match_date, start_time, end_time,
-        max_participants, current_participants, game_type, status,
+        max_participants, game_type, status,
         description, price,
         recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
         rules, equipment, parking_info,
@@ -291,6 +315,12 @@ export const matchController = {
         isHost: p.is_host,
       })) || [];
 
+    // 실제 확정된 참가자 수 계산 (호스트 제외)
+    const current_participants =
+      participants?.filter((p) => !p.is_host).length || 0;
+    // 최대 참가자 수에서도 호스트 제외 (단, 최소 1은 보장)
+    const maxParticipantsExcludingHost = match.max_participants;
+
     // 조인된 데이터를 안전하게 추출
     const venue =
       match.venues &&
@@ -309,7 +339,7 @@ export const matchController = {
       date: formatMatchDate(match.match_date),
       startTime: match.start_time.substring(0, 5),
       endTime: match.end_time.substring(0, 5),
-      participants: `${match.current_participants}/${match.max_participants}`,
+      participants: `${current_participants}/${maxParticipantsExcludingHost}`,
       gameType: formatGameType(match.game_type),
       level: formatNtrpLevel(match.recruit_ntrp_min, match.recruit_ntrp_max),
       price: match.price ? formatPrice(match.price) : "무료",
@@ -367,7 +397,7 @@ export const matchController = {
       );
     }
 
-    if (match.current_participants >= match.max_participants) {
+    if (match.current_participants - 1 >= match.max_participants) {
       throw new ApiError(400, "이미 마감된 매치입니다", "MATCH_FULL");
     }
 
@@ -377,7 +407,7 @@ export const matchController = {
       .select("id, status")
       .eq("match_id", matchId)
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (existingParticipation) {
       const statusMessage: Record<string, string> = {
@@ -385,11 +415,11 @@ export const matchController = {
         confirmed: "이미 참가 확정된 매치입니다",
         rejected: "참가 신청이 거절된 매치입니다",
       };
-      throw new ApiError(
-        409,
+      return ResponseHelper.success(
+        res,
+        null,
         statusMessage[existingParticipation.status] ||
-          "이미 참가 신청한 매치입니다",
-        "ALREADY_APPLIED"
+          "이미 참가 신청한 매치입니다"
       );
     }
 
@@ -590,7 +620,7 @@ export const matchController = {
     return ResponseHelper.success(res, null, "북마크에서 제거되었습니다");
   }),
 
-  // 3.4 매치 단체 채팅방 생성
+  // 3.4 매치 단체 채팅방 생성 또는 참가
   createMatchChat: asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) {
       throw new ApiError(401, "인증이 필요합니다", "AUTHENTICATION_REQUIRED");
@@ -602,7 +632,7 @@ export const matchController = {
     // 매치 존재 확인
     const { data: match, error: matchError } = await supabase
       .from("matches")
-      .select("id, host_id")
+      .select("id, host_id, title")
       .eq("id", matchId)
       .single();
 
@@ -619,10 +649,27 @@ export const matchController = {
       .single();
 
     if (existingChat) {
+      // 이미 채팅방이 존재하는 경우, 사용자가 참가자인지 확인
+      const { data: existingParticipation } = await supabase
+        .from("chat_participants")
+        .select("id")
+        .eq("room_id", existingChat.id)
+        .eq("user_id", userId)
+        .single();
+
+      if (!existingParticipation) {
+        // 참가자가 아니면 추가
+        await supabase.from("chat_participants").insert({
+          room_id: existingChat.id,
+          user_id: userId,
+          role: "member",
+        });
+      }
+
       return ResponseHelper.success(res, {
         chatRoomId: existingChat.id,
         success: true,
-        message: "이미 존재하는 채팅방입니다",
+        message: "채팅방에 참가했습니다",
         chatRoom: {
           id: existingChat.id,
           name: existingChat.name,
@@ -632,11 +679,11 @@ export const matchController = {
       });
     }
 
-    // 채팅방 생성
+    // 채팅방이 없는 경우 새로 생성
     const { data: chatRoom, error: chatError } = await supabase
       .from("chat_rooms")
       .insert({
-        name: `🎾 ${req.params.matchId} 매치 채팅방`,
+        name: `🎾 ${match.title} 채팅방`,
         type: "match",
         match_id: matchId,
       })
@@ -652,20 +699,59 @@ export const matchController = {
       );
     }
 
-    // 채팅방 생성자를 admin으로 추가
+    // 채팅방 생성자를 member로 추가
     await supabase.from("chat_participants").insert({
       room_id: chatRoom.id,
       user_id: userId,
-      role: "admin",
+      role: "member",
     });
 
-    // 매치 호스트를 채팅방에 추가 (생성자가 호스트가 아닌 경우)
+    // 매치 호스트를 채팅방에 admin으로 추가 (생성자가 호스트가 아닌 경우)
     if (match.host_id !== userId) {
       await supabase.from("chat_participants").insert({
         room_id: chatRoom.id,
         user_id: match.host_id,
-        role: "member",
+        role: "admin",
       });
+    } else {
+      // 호스트가 생성한 경우 admin 권한 부여
+      await supabase
+        .from("chat_participants")
+        .update({ role: "admin" })
+        .eq("room_id", chatRoom.id)
+        .eq("user_id", userId);
+    }
+
+    // 확정된 모든 참가자들을 채팅방에 추가
+    const { data: confirmedParticipants } = await supabase
+      .from("match_participants")
+      .select("user_id")
+      .eq("match_id", matchId)
+      .eq("status", "confirmed")
+      .neq("is_host", true); // 호스트 제외 (이미 추가됨)
+
+    if (confirmedParticipants && confirmedParticipants.length > 0) {
+      const participantsToAdd = confirmedParticipants
+        .filter((p) => p.user_id !== userId) // 생성자 제외 (이미 추가됨)
+        .map((p) => ({
+          room_id: chatRoom.id,
+          user_id: p.user_id,
+          role: "member",
+        }));
+
+      if (participantsToAdd.length > 0) {
+        const { error: participantsError } = await supabase
+          .from("chat_participants")
+          .insert(participantsToAdd);
+
+        if (participantsError) {
+          logger.error(
+            "Failed to add confirmed participants to chat:",
+            participantsError
+          );
+          // 에러가 발생해도 채팅방 생성 자체는 성공으로 처리
+        }
+      }
     }
 
     logger.info("Match chat created:", { chatRoomId: chatRoom.id, matchId });
@@ -673,13 +759,152 @@ export const matchController = {
     return ResponseHelper.success(res, {
       chatRoomId: chatRoom.id,
       success: true,
-      message: "채팅방이 생성되었습니다. 호스트가 승인하면 참가자가 됩니다",
+      message: "채팅방이 생성되었습니다",
       chatRoom: {
         id: chatRoom.id,
         name: chatRoom.name,
         type: chatRoom.type,
         matchId: chatRoom.match_id,
         participants: match.host_id === userId ? 1 : 2,
+      },
+    });
+  }),
+
+  // 3.5 매치 호스트와 1:1 채팅방 생성
+  createPrivateChat: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new ApiError(401, "인증이 필요합니다", "AUTHENTICATION_REQUIRED");
+    }
+
+    const matchId = uuidSchema.parse(req.params.matchId);
+    const userId = req.user.id;
+
+    // 매치 정보 조회
+    const { data: match, error: matchError } = await supabase
+      .from("matches")
+      .select("id, host_id, title")
+      .eq("id", matchId)
+      .single();
+
+    if (matchError || !match) {
+      throw new ApiError(404, "매치를 찾을 수 없습니다", "MATCH_NOT_FOUND");
+    }
+
+    // 자기 자신과는 채팅방 생성 불가
+    if (match.host_id === userId) {
+      throw new ApiError(
+        400,
+        "자신과는 채팅방을 생성할 수 없습니다",
+        "CANNOT_CHAT_WITH_SELF"
+      );
+    }
+
+    // 기존 1:1 채팅방 확인
+    const { data: existingChats } = await supabase
+      .from("chat_rooms")
+      .select(
+        `
+        id,
+        name,
+        type,
+        chat_participants!inner(user_id)
+      `
+      )
+      .eq("type", "private");
+
+    // 두 사용자가 모두 참여한 채팅방 찾기
+    let existingPrivateChat = null;
+    if (existingChats) {
+      for (const chat of existingChats) {
+        const participants = chat.chat_participants as any[];
+        const userIds = participants.map((p: any) => p.user_id);
+        if (
+          userIds.length === 2 &&
+          userIds.includes(userId) &&
+          userIds.includes(match.host_id)
+        ) {
+          existingPrivateChat = chat;
+          break;
+        }
+      }
+    }
+
+    if (existingPrivateChat) {
+      return ResponseHelper.success(res, {
+        chatRoomId: existingPrivateChat.id,
+        success: true,
+        message: "기존 채팅방으로 이동합니다",
+        chatRoom: {
+          id: existingPrivateChat.id,
+          name: existingPrivateChat.name,
+          type: existingPrivateChat.type,
+        },
+      });
+    }
+
+    // 호스트 정보 조회
+    const { data: hostData } = await supabase
+      .from("users")
+      .select("name, nickname")
+      .eq("id", match.host_id)
+      .single();
+
+    const { data: userData } = await supabase
+      .from("users")
+      .select("name, nickname")
+      .eq("id", userId)
+      .single();
+
+    // 새로운 1:1 채팅방 생성
+    const { data: chatRoom, error: chatError } = await supabase
+      .from("chat_rooms")
+      .insert({
+        name: `${hostData?.nickname || hostData?.name} & ${
+          userData?.nickname || userData?.name
+        }`,
+        type: "private",
+        match_id: matchId,
+      })
+      .select("id, name, type")
+      .single();
+
+    if (chatError) {
+      logger.error("Private chat room creation error:", chatError);
+      throw new ApiError(
+        500,
+        "채팅방 생성 중 오류가 발생했습니다",
+        "CHAT_CREATION_ERROR"
+      );
+    }
+
+    // 두 사용자를 채팅방에 추가
+    await supabase.from("chat_participants").insert([
+      {
+        room_id: chatRoom.id,
+        user_id: userId,
+        role: "member",
+      },
+      {
+        room_id: chatRoom.id,
+        user_id: match.host_id,
+        role: "member",
+      },
+    ]);
+
+    logger.info("Private chat created:", {
+      chatRoomId: chatRoom.id,
+      users: [userId, match.host_id],
+    });
+
+    return ResponseHelper.success(res, {
+      chatRoomId: chatRoom.id,
+      success: true,
+      message: "1:1 채팅방이 생성되었습니다",
+      chatRoom: {
+        id: chatRoom.id,
+        name: chatRoom.name,
+        type: chatRoom.type,
+        participants: 2,
       },
     });
   }),

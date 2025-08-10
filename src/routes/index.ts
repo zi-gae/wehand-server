@@ -11,6 +11,7 @@ import communityRoutes from './community';
 import profileRoutes from './profile';
 import notificationRoutes from './notifications';
 import chatRoutes from './chat';
+import reviewRoutes from './reviewRoutes';
 
 const router = Router();
 
@@ -52,5 +53,6 @@ router.use('/community', communityRoutes);
 router.use('/profile', profileRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/chat', chatRoutes);
+router.use('/reviews', reviewRoutes);
 
 export default router;
