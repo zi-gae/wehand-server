@@ -54,7 +54,7 @@ const io = new Server<
   },
 });
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 // 보안 미들웨어
 app.use(helmetConfig);
