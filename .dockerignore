@@ -9,7 +9,7 @@ npm-debug.log*
 .env.production
 
 # Build output (will be created during build)
-dist
+# dist
 
 # Development files
 .git
