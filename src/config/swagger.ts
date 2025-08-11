@@ -181,6 +181,12 @@ const swaggerDefinition = {
             example: "https://example.com/profile.jpg",
             description: "프로필 이미지 URL",
           },
+          gender: {
+            type: "string",
+            enum: ["male", "female", "other"],
+            example: "male",
+            description: "성별 (male, female, other)",
+          },
           ntrp: {
             type: "number",
             format: "float",
@@ -189,34 +195,34 @@ const swaggerDefinition = {
             example: 4.0,
             description: "NTRP 레벨 (1.0-7.0)",
           },
-          experienceYears: {
+          experience_years: {
             type: "integer",
             minimum: 0,
             maximum: 50,
             example: 5,
             description: "테니스 경력 (년)",
           },
-          favoriteStyle: {
+          favorite_style: {
             type: "string",
             example: "공격적 베이스라인",
             description: "선호하는 플레이 스타일",
           },
-          totalReviews: {
+          total_reviews: {
             type: "integer",
             example: 12,
             description: "받은 리뷰 총 개수",
           },
-          positiveReviews: {
+          positive_reviews: {
             type: "integer",
             example: 9,
             description: "긍정적 리뷰 수",
           },
-          negativeReviews: {
+          negative_reviews: {
             type: "integer",
             example: 3,
             description: "부정적 리뷰 수",
           },
-          reviewNtrp: {
+          review_ntrp: {
             type: "number",
             example: 4.2,
             description: "리뷰 기반 평균 NTRP",
@@ -1445,22 +1451,46 @@ const swaggerDefinition = {
           type: {
             type: "string",
             enum: ["match", "chat", "community", "system", "marketing"],
-            example: "match",
+            example: "community",
             description: "알림 유형",
           },
           title: {
             type: "string",
-            example: "매치 참가 승인",
+            example: "게시글에 좋아요를 받았습니다",
             description: "알림 제목",
           },
           message: {
             type: "string",
-            example: '"즐거운 주말 단식" 매치 참가가 승인되었습니다.',
+            example:
+              'TennisLover님이 "테니스 초보자 가이드" 게시글에 좋아요를 눌렀습니다.',
             description: "알림 내용",
           },
-          data: {
+          action_data: {
             type: "object",
             description: "알림 관련 추가 데이터 (JSON 객체)",
+            example: {
+              type: "navigate",
+              screen: "PostDetail",
+              params: {
+                postId: "12345678-1234-1234-1234-123456789012",
+              },
+            },
+          },
+          post_id: {
+            type: "string",
+            format: "uuid",
+            description: "관련 게시글 ID (커뮤니티 알림인 경우)",
+            example: "12345678-1234-1234-1234-123456789012",
+          },
+          match_id: {
+            type: "string",
+            format: "uuid",
+            description: "관련 매치 ID (매치 알림인 경우)",
+          },
+          chat_room_id: {
+            type: "string",
+            format: "uuid",
+            description: "관련 채팅방 ID (채팅 알림인 경우)",
           },
           is_read: {
             type: "boolean",
@@ -1511,22 +1541,24 @@ const swaggerDefinition = {
           match_notifications: {
             type: "boolean",
             example: true,
-            description: "매치 관련 알림 활성화 여부",
+            description:
+              "매치 관련 알림 활성화 여부 (참가 승인/거부, 매치 시작 등)",
           },
           chat_notifications: {
             type: "boolean",
             example: true,
-            description: "채팅 알림 활성화 여부",
+            description: "채팅 메시지 알림 활성화 여부",
           },
           community_notifications: {
             type: "boolean",
             example: true,
-            description: "커뮤니티 알림 활성화 여부",
+            description:
+              "커뮤니티 알림 활성화 여부 (게시글 좋아요, 댓글, 대댓글)",
           },
           marketing_notifications: {
             type: "boolean",
             example: false,
-            description: "마케팅 알림 활성화 여부",
+            description: "마케팅 및 프로모션 알림 활성화 여부",
           },
         },
       },
@@ -1540,19 +1572,21 @@ const swaggerDefinition = {
           },
           match_notifications: {
             type: "boolean",
-            description: "매치 관련 알림 활성화 여부 (선택)",
+            description:
+              "매치 관련 알림 활성화 여부 (선택) - 참가 승인/거부, 매치 시작 등",
           },
           chat_notifications: {
             type: "boolean",
-            description: "채팅 알림 활성화 여부 (선택)",
+            description: "채팅 메시지 알림 활성화 여부 (선택)",
           },
           community_notifications: {
             type: "boolean",
-            description: "커뮤니티 알림 활성화 여부 (선택)",
+            description:
+              "커뮤니티 알림 활성화 여부 (선택) - 게시글 좋아요, 댓글, 대댓글",
           },
           marketing_notifications: {
             type: "boolean",
-            description: "마케팅 알림 활성화 여부 (선택)",
+            description: "마케팅 및 프로모션 알림 활성화 여부 (선택)",
           },
         },
       },

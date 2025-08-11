@@ -3,6 +3,7 @@ import { AuthRequest } from "../types/auth";
 import { supabase } from "../lib/supabase";
 import { ApiError } from "../utils/errors";
 import { logger } from "../config/logger";
+import { NotificationService } from "../services/notificationService";
 import { z } from "zod";
 
 // Validation schemas
@@ -469,6 +470,37 @@ export const likePost = async (req: AuthRequest, res: Response) => {
       throw new ApiError(400, "이미 좋아요한 게시글입니다", "ALREADY_LIKED");
     }
 
+    // 게시글 정보와 작성자 정보 조회
+    const { data: post, error: postError } = await supabase
+      .from("posts")
+      .select(
+        `
+        id,
+        title,
+        author_id,
+        author:author_id(
+          nickname
+        )
+      `
+      )
+      .eq("id", postId)
+      .single();
+
+    if (postError || !post) {
+      throw new ApiError(404, "게시글을 찾을 수 없습니다", "POST_NOT_FOUND");
+    }
+
+    // 좋아요한 사용자 정보 조회
+    const { data: liker, error: likerError } = await supabase
+      .from("users")
+      .select("nickname")
+      .eq("id", userId)
+      .single();
+
+    if (likerError || !liker) {
+      throw new ApiError(404, "사용자를 찾을 수 없습니다", "USER_NOT_FOUND");
+    }
+
     // 좋아요 추가
     const { error: likeError } = await supabase.from("post_likes").insert({
       post_id: postId,
@@ -504,6 +536,16 @@ export const likePost = async (req: AuthRequest, res: Response) => {
         "DATABASE_ERROR",
         true,
         updateError
+      );
+    }
+
+    // 자신의 게시글이 아닌 경우에만 알림 발송
+    if (post.author_id !== userId) {
+      await NotificationService.createPostLikeNotification(
+        postId,
+        post.title,
+        post.author_id,
+        liker.nickname
       );
     }
 
@@ -720,35 +762,67 @@ export const createComment = async (req: AuthRequest, res: Response) => {
 
     const { content, parent_id } = validation.data;
 
-    // 게시글 존재 확인
-    const { data: post } = await supabase
+    // 게시글 존재 확인 및 작성자 정보 조회
+    const { data: post, error: postError } = await supabase
       .from("posts")
-      .select("id")
+      .select(
+        `
+        id,
+        title,
+        author_id,
+        author:author_id(
+          nickname
+        )
+      `
+      )
       .eq("id", postId)
       .eq("is_active", true)
       .eq("is_deleted", false)
       .single();
 
-    if (!post) {
+    if (postError || !post) {
       throw new ApiError(404, "게시글을 찾을 수 없습니다", "POST_NOT_FOUND");
     }
 
+    // 댓글 작성자 정보 조회
+    const { data: commenter, error: commenterError } = await supabase
+      .from("users")
+      .select("nickname")
+      .eq("id", userId)
+      .single();
+
+    if (commenterError || !commenter) {
+      throw new ApiError(404, "사용자를 찾을 수 없습니다", "USER_NOT_FOUND");
+    }
+
+    let parentCommentAuthor = null;
+
     // 대댓글인 경우 부모 댓글 확인
     if (parent_id) {
-      const { data: parentComment } = await supabase
+      const { data: parentComment, error: parentError } = await supabase
         .from("comments")
-        .select("id")
+        .select(
+          `
+          id,
+          author_id,
+          author:author_id(
+            nickname
+          )
+        `
+        )
         .eq("id", parent_id)
         .eq("post_id", postId)
         .single();
 
-      if (!parentComment) {
+      if (parentError || !parentComment) {
         throw new ApiError(
           404,
           "부모 댓글을 찾을 수 없습니다",
           "PARENT_COMMENT_NOT_FOUND"
         );
       }
+
+      parentCommentAuthor = parentComment;
     }
 
     const { data: comment, error } = await supabase
@@ -771,6 +845,31 @@ export const createComment = async (req: AuthRequest, res: Response) => {
       await supabase.rpc("increment_post_comments", {
         post_id: postId,
       });
+    }
+
+    // 알림 발송
+    if (parent_id && parentCommentAuthor) {
+      // 대댓글인 경우 - 부모 댓글 작성자에게 알림 (자신의 댓글이 아닌 경우에만)
+      if (parentCommentAuthor.author_id !== userId) {
+        await NotificationService.createReplyNotification(
+          postId,
+          post.title,
+          parentCommentAuthor.author_id,
+          commenter.nickname,
+          content
+        );
+      }
+    } else {
+      // 일반 댓글인 경우 - 게시글 작성자에게 알림 (자신의 게시글이 아닌 경우에만)
+      if (post.author_id !== userId) {
+        await NotificationService.createCommentNotification(
+          postId,
+          post.title,
+          post.author_id,
+          commenter.nickname,
+          content
+        );
+      }
     }
 
     res.status(201).json({

@@ -59,11 +59,37 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
       throw new ApiError(500, "알림 조회 실패", "DATABASE_ERROR");
     }
 
+    // 타입에 따라 message 처리
+    const processedNotifications = (notifications || []).map((notification) => {
+      let processedMessage = notification.message;
+
+      if (notification.type === "system") {
+        // system 타입인 경우 JSON 객체로 유지
+        processedMessage = notification.message;
+      } else {
+        // 다른 타입인 경우 문자열로 처리
+        if (typeof notification.message === "string") {
+          processedMessage = notification.message;
+        } else if (
+          notification.message &&
+          typeof notification.message === "object"
+        ) {
+          // JSONB에 문자열이 JSON 형태로 저장된 경우, 실제 문자열 값 추출
+          processedMessage = notification.message;
+        }
+      }
+
+      return {
+        ...notification,
+        message: processedMessage,
+      };
+    });
+
     const totalPages = Math.ceil((count || 0) / Number(limit));
 
     res.json({
       success: true,
-      data: notifications,
+      data: processedNotifications,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -96,7 +122,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 읽지 않은 알림 개수 조회
+// 읽지 않은 알림 개수 조회 (채팅 알림 + 게시판 알림)
 export const getUnreadCount = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
@@ -123,6 +149,120 @@ export const getUnreadCount = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("읽지 않은 알림 개수 조회 실패:", error);
+
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "서버 내부 오류가 발생했습니다",
+      },
+    });
+  }
+};
+
+// 읽지 않은 알림 개수 조회 (채팅 알림)
+export const getUnreadChatCount = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    // 읽지 않은 채팅/시스템 타입 알림 개수 직접 조회
+    const { count, error } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .in("type", ["chat", "system"])
+      .eq("is_read", false);
+
+    if (error) {
+      throw new ApiError(
+        500,
+        "읽지 않은 채팅 알림 개수 조회 실패",
+        "DATABASE_ERROR"
+      );
+    }
+
+    res.json({
+      success: true,
+      data: {
+        count: count || 0,
+      },
+    });
+  } catch (error: any) {
+    logger.error("읽지 않은 채팅 메시지 개수 조회 실패:", error);
+
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "서버 내부 오류가 발생했습니다",
+      },
+    });
+  }
+};
+
+// 읽지 않은 알림 개수 조회 (타입별)
+export const getUnreadCountByType = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    // 채팅 알림 개수
+    const { count: chatNotificationCount, error: chatError } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_read", false)
+      .eq("type", "chat");
+
+    if (chatError) {
+      throw new ApiError(500, "채팅 알림 개수 조회 실패", "DATABASE_ERROR");
+    }
+
+    // 게시판 알림 개수 (커뮤니티, 매치 등)
+    const { count: boardNotificationCount, error: boardError } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_read", false)
+      .neq("type", "chat");
+
+    if (boardError) {
+      throw new ApiError(500, "게시판 알림 개수 조회 실패", "DATABASE_ERROR");
+    }
+
+    // 전체 알림 개수
+    const totalCount =
+      (chatNotificationCount || 0) + (boardNotificationCount || 0);
+
+    res.json({
+      success: true,
+      data: {
+        totalCount,
+        chatNotificationCount: chatNotificationCount || 0,
+        boardNotificationCount: boardNotificationCount || 0,
+      },
+    });
+  } catch (error: any) {
+    logger.error("타입별 알림 개수 조회 실패:", error);
 
     if (error instanceof ApiError) {
       return res.status(error.statusCode).json({
@@ -538,6 +678,8 @@ export const updateNotificationSettings = async (
 export const notificationController = {
   getNotifications,
   getUnreadCount,
+  getUnreadChatCount,
+  getUnreadCountByType,
   markAsRead,
   markAllAsRead,
   deleteNotification,

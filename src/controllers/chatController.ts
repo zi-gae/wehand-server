@@ -5,6 +5,7 @@ import { ApiError } from "../utils/errors";
 import { logger } from "../config/logger";
 import { z } from "zod";
 import { io } from "../app";
+import { createChatMessageNotifications } from "../services/chatNotificationService";
 
 // Validation schemas
 const sendMessageSchema = z.object({
@@ -730,6 +731,68 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       .update({ updated_at: new Date().toISOString() })
       .eq("id", chatRoomId);
 
+    // 메시지 알림 생성 (system 포함)
+    console.log("@@message.message_type", message.message_type);
+    if (message) {
+      let senderNickname = "알 수 없음";
+      let notificationContent = message.content;
+
+      if (message.message_type === "system") {
+        senderNickname = "SYSTEM";
+
+        // system 메시지의 경우 metadata에서 사용자 친화적인 메시지 생성
+        if (message.metadata) {
+          const metadata = message.metadata;
+
+          switch (metadata.type) {
+            case "approval_request":
+              senderNickname = "매치 승인 요청";
+              notificationContent = `${metadata.participantName}님의 매치 참가 요청이 도착했습니다.`;
+              break;
+            case "user_joined":
+              notificationContent = `새로운 사용자가 채팅방에 참가했습니다.`;
+              break;
+            case "user_left":
+              notificationContent = `사용자가 채팅방을 나갔습니다.`;
+              break;
+            default:
+              // metadata에서 메시지 추출 시도
+              notificationContent =
+                metadata.message || metadata.text || "시스템 메시지";
+          }
+        } else {
+          // metadata가 없는 경우 content에서 JSON 파싱 시도
+          try {
+            if (message.content.startsWith("{")) {
+              const contentObj = JSON.parse(message.content);
+              notificationContent =
+                contentObj.message || contentObj.text || "시스템 메시지";
+            }
+          } catch (e) {
+            // JSON 파싱 실패 시 원본 content 사용
+            notificationContent = message.content;
+          }
+        }
+      } else {
+        // 일반 메시지인 경우
+        senderNickname =
+          (Array.isArray(message.sender)
+            ? (message.sender[0] as { nickname?: string })?.nickname
+            : (message.sender as { nickname?: string })?.nickname) ||
+          "알 수 없음";
+        notificationContent = message.content;
+      }
+
+      createChatMessageNotifications({
+        chatRoomId,
+        senderId: message.message_type === "system" ? null : userId,
+        title: senderNickname,
+        messageId: message.id,
+        content: notificationContent,
+        type: message.message_type === "system" ? "system" : "chat",
+      }).catch(() => {});
+    }
+
     // 읽지 않은 메시지는 last_read_message_id 기반으로 계산됩니다
     // (chat_participants 테이블의 last_read_message_id 컬럼 활용)
     const roomName = `chat-${chatRoomId}`;
@@ -1219,7 +1282,9 @@ export const approveMatchParticipant = async (
     }
 
     // 상대방 ID 찾기
-    const otherUserId = participants.find(p => p.user_id !== currentUserId)?.user_id;
+    const otherUserId = participants.find(
+      (p) => p.user_id !== currentUserId
+    )?.user_id;
     if (!otherUserId) {
       throw new ApiError(
         400,
@@ -1357,6 +1422,18 @@ export const approveMatchParticipant = async (
       });
     }
 
+    // 매치 참가 확정 알림 생성
+    createChatMessageNotifications({
+      chatRoomId,
+      senderId: null,
+      title: "매치 참가 확정",
+      messageId: systemMessage?.id || "",
+      content: `${
+        approvedUser?.nickname || "사용자"
+      }님의 매치 참가가 확정되었습니다.`,
+      type: "system",
+    }).catch(() => {});
+
     res.json({
       success: true,
       data: {
@@ -1460,7 +1537,9 @@ export const cancelMatchApproval = async (req: AuthRequest, res: Response) => {
     }
 
     // 상대방 ID 찾기
-    const participantUserId = participants.find(p => p.user_id !== currentUserId)?.user_id;
+    const participantUserId = participants.find(
+      (p) => p.user_id !== currentUserId
+    )?.user_id;
     if (!participantUserId) {
       throw new ApiError(
         400,
@@ -1562,6 +1641,18 @@ export const cancelMatchApproval = async (req: AuthRequest, res: Response) => {
         chatRoomId: chatRoomId,
       });
     }
+
+    // 매치 참가 확정 취소 알림 생성
+    createChatMessageNotifications({
+      chatRoomId,
+      senderId: null,
+      title: "매치 참가 확정 취소",
+      messageId: systemMessage?.id || "",
+      content: `${
+        cancelledUser?.nickname || "사용자"
+      }님의 매치 참가 확정이 취소되었습니다.`,
+      type: "system",
+    }).catch(() => {});
 
     res.json({
       success: true,

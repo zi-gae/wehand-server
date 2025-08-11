@@ -58,21 +58,41 @@ export const matchController = {
         .in("status", ["recruiting", "full", "confirmed"]);
     } else {
       // 기본 matches 테이블 조회 (host_id 포함)
-      query = supabase
-        .from("matches")
-        .select(
-          `
-        id, title, host_id, venue_id, court, match_date, start_time, end_time,
-        max_participants, current_participants, game_type, status,
-        description, price,
-        recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
-        created_at,
-        venues(name, address),
-        users(name, ntrp, experience_years)
-      `,
-          { count: "exact" }
-        )
-        .in("status", ["recruiting", "full", "confirmed"]);
+      if (region) {
+        // region 필터가 있을 때는 venues를 inner join하고 필터 조건 추가
+        query = supabase
+          .from("matches")
+          .select(
+            `
+          id, title, host_id, venue_id, court, match_date, start_time, end_time,
+          max_participants, current_participants, game_type, status,
+          description, price,
+          recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
+          created_at,
+          venues!inner(name, address),
+          users(name, ntrp, experience_years)
+        `,
+            { count: "exact" }
+          )
+          .in("status", ["recruiting", "full", "confirmed"])
+          .ilike("venues.address", `%${region}%`);
+      } else {
+        query = supabase
+          .from("matches")
+          .select(
+            `
+          id, title, host_id, venue_id, court, match_date, start_time, end_time,
+          max_participants, current_participants, game_type, status,
+          description, price,
+          recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
+          created_at,
+          venues(name, address),
+          users(name, ntrp, experience_years)
+        `,
+            { count: "exact" }
+          )
+          .in("status", ["recruiting", "full", "confirmed"]);
+      }
     }
 
     // 검색어 필터
@@ -89,11 +109,7 @@ export const matchController = {
         );
       }
     }
-
-    // 지역 필터
-    if (region) {
-      query = query.ilike("venues.address", `%${region}%`);
-    }
+    // 지역 필터는 쿼리 생성 후 적용하지 않고, select 시점에 처리
 
     // 게임 타입 필터
     if (game_type) {
@@ -139,6 +155,11 @@ export const matchController = {
     query = query.range(offset, offset + limit - 1);
 
     const { data: matches, error, count } = await query;
+
+    if (region) {
+      console.log("Final matches after all filters:");
+      console.log(region, matches);
+    }
 
     if (error) {
       logger.error("Match list fetch error:", error);
@@ -227,13 +248,7 @@ export const matchController = {
           id: match.id,
           title: match.title,
           hostId: match.host_id, // 추가된 host_id
-          location:
-            match.venue_name ||
-            (match.venues &&
-              (Array.isArray(match.venues)
-                ? match.venues[0]?.name
-                : match.venues?.name)) ||
-            "",
+          location: match.court,
           court: match.court,
           date: formatMatchDate(match.match_date),
           startTime: match.start_time.substring(0, 5),

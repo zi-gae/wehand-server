@@ -1,0 +1,49 @@
+# Fly.io configuration for WeHand Server
+app = "wehand-server"
+primary_region = "nrt"  # 도쿄 (한국과 가장 가까움)
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  # Socket.IO를 위한 sticky sessions 설정
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  # HTTP 헬스체크
+  [[http_service.checks]]
+    interval = "10s"
+    grace_period = "5s" 
+    method = "GET"
+    path = "/health"
+    protocol = "http"
+    timeout = "2s"
+    tls_skip_verify = false
+
+# VM 리소스 설정
+[vm]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+# 서울 지역 추가 (트래픽 증가 시)
+[regions]
+  nrt = true  # 도쿄
+  # icn = true  # 서울 (향후 추가)
+
+# 메트릭 및 모니터링
+[metrics]
+  port = 9091
+  path = "/metrics"

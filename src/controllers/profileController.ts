@@ -15,6 +15,7 @@ const updateProfileSchema = z.object({
   ntrp: z.number().min(1.0).max(7.0).optional(),
   experience_years: z.number().min(0).max(50).optional(),
   favorite_style: z.string().max(100).optional(),
+  gender: z.enum(["male", "female", "other"]).optional(),
 });
 
 // 내 프로필 조회
@@ -34,6 +35,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
       location,
       bio,
       profile_image_url,
+      gender,
       ntrp,
       experience_years,
       favorite_style,
@@ -218,7 +220,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-
     const { data: user, error } = await supabase
       .from("users")
       .select(
@@ -229,6 +230,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
         location,
         bio,
         profile_image_url,
+        gender,
         ntrp,
         experience_years,
         favorite_style,

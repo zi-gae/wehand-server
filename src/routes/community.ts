@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { communityController } from '../controllers/communityController';
-import { requireAuth, optionalAuth } from '../middleware/auth';
+import { Router } from "express";
+import { communityController } from "../controllers/communityController";
+import { requireAuth, optionalAuth } from "../middleware/auth";
 
 const router = Router();
 
@@ -62,7 +62,7 @@ const router = Router();
  *                 pagination:
  *                   $ref: '#/components/schemas/PaginationInfo'
  */
-router.get('/posts', communityController.getPosts);
+router.get("/posts", communityController.getPosts);
 
 /**
  * @swagger
@@ -99,7 +99,7 @@ router.get('/posts', communityController.getPosts);
  *                       type: string
  *                       example: 게시글이 작성되었습니다
  */
-router.post('/posts', requireAuth, communityController.createPost);
+router.post("/posts", requireAuth, communityController.createPost);
 
 /**
  * @swagger
@@ -135,7 +135,7 @@ router.post('/posts', requireAuth, communityController.createPost);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/posts/:postId', optionalAuth, communityController.getPost);
+router.get("/posts/:postId", optionalAuth, communityController.getPost);
 
 /**
  * @swagger
@@ -179,7 +179,7 @@ router.get('/posts/:postId', optionalAuth, communityController.getPost);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/posts/:postId', requireAuth, communityController.updatePost);
+router.put("/posts/:postId", requireAuth, communityController.updatePost);
 
 /**
  * @swagger
@@ -217,13 +217,22 @@ router.put('/posts/:postId', requireAuth, communityController.updatePost);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete('/posts/:postId', requireAuth, communityController.deletePost);
+router.delete("/posts/:postId", requireAuth, communityController.deletePost);
 
 /**
  * @swagger
  * /api/community/posts/{postId}/like:
  *   post:
  *     summary: 게시글 좋아요
+ *     description: |
+ *       게시글에 좋아요를 추가합니다.
+ *
+ *       **알림 기능:**
+ *       - 자신의 게시글이 아닌 경우, 게시글 작성자에게 알림이 발송됩니다.
+ *       - 알림 타입: `community`
+ *       - 알림 제목: "게시글에 좋아요를 받았습니다"
+ *       - 알림 내용: "{닉네임}님이 "{게시글 제목}" 게시글에 좋아요를 눌렀습니다."
+ *       - 사용자의 커뮤니티 알림 설정에 따라 발송 여부가 결정됩니다.
  *     tags: [Community]
  *     security:
  *       - BearerAuth: []
@@ -249,7 +258,7 @@ router.delete('/posts/:postId', requireAuth, communityController.deletePost);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/posts/:postId/like', requireAuth, communityController.likePost);
+router.post("/posts/:postId/like", requireAuth, communityController.likePost);
 
 /**
  * @swagger
@@ -275,7 +284,11 @@ router.post('/posts/:postId/like', requireAuth, communityController.likePost);
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  */
-router.delete('/posts/:postId/like', requireAuth, communityController.unlikePost);
+router.delete(
+  "/posts/:postId/like",
+  requireAuth,
+  communityController.unlikePost
+);
 
 /**
  * @swagger
@@ -324,13 +337,28 @@ router.delete('/posts/:postId/like', requireAuth, communityController.unlikePost
  *                 pagination:
  *                   $ref: '#/components/schemas/PaginationInfo'
  */
-router.get('/posts/:postId/comments', communityController.getComments);
+router.get("/posts/:postId/comments", communityController.getComments);
 
 /**
  * @swagger
  * /api/community/posts/{postId}/comments:
  *   post:
  *     summary: 댓글 작성
+ *     description: |
+ *       게시글에 댓글을 작성합니다. 대댓글 작성도 가능합니다.
+ *
+ *       **알림 기능:**
+ *       - **일반 댓글**: 자신의 게시글이 아닌 경우, 게시글 작성자에게 알림이 발송됩니다.
+ *         - 알림 타입: `community`
+ *         - 알림 제목: "게시글에 댓글이 달렸습니다"
+ *         - 알림 내용: "{닉네임}님이 "{게시글 제목}" 게시글에 댓글을 남겼습니다: "{댓글 내용 50자}""
+ *
+ *       - **대댓글**: 자신의 댓글이 아닌 경우, 부모 댓글 작성자에게 알림이 발송됩니다.
+ *         - 알림 타입: `community`
+ *         - 알림 제목: "댓글에 답글이 달렸습니다"
+ *         - 알림 내용: "{닉네임}님이 회원님의 댓글에 답글을 남겼습니다: "{답글 내용 50자}""
+ *
+ *       - 사용자의 커뮤니티 알림 설정에 따라 발송 여부가 결정됩니다.
  *     tags: [Community]
  *     security:
  *       - BearerAuth: []
@@ -348,6 +376,16 @@ router.get('/posts/:postId/comments', communityController.getComments);
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CreateCommentRequest'
+ *           examples:
+ *             댓글:
+ *               summary: 일반 댓글 작성
+ *               value:
+ *                 content: "좋은 정보 감사합니다!"
+ *             대댓글:
+ *               summary: 대댓글 작성
+ *               value:
+ *                 content: "저도 그렇게 생각합니다."
+ *                 parent_id: "12345678-1234-1234-1234-123456789012"
  *     responses:
  *       201:
  *         description: 댓글 작성 성공
@@ -369,7 +407,11 @@ router.get('/posts/:postId/comments', communityController.getComments);
  *                       type: string
  *                       example: 댓글이 작성되었습니다
  */
-router.post('/posts/:postId/comments', requireAuth, communityController.createComment);
+router.post(
+  "/posts/:postId/comments",
+  requireAuth,
+  communityController.createComment
+);
 
 /**
  * @swagger
@@ -407,6 +449,10 @@ router.post('/posts/:postId/comments', requireAuth, communityController.createCo
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete('/comments/:commentId', requireAuth, communityController.deleteComment);
+router.delete(
+  "/comments/:commentId",
+  requireAuth,
+  communityController.deleteComment
+);
 
 export default router;
