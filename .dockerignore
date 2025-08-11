@@ -17,7 +17,6 @@ npm-debug.log*
 README.md
 .eslintrc*
 .prettierrc*
-tsconfig.json
 
 # IDE files
 .vscode

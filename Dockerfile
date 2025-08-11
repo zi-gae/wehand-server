@@ -16,8 +16,8 @@ RUN npm install
 # 소스 코드 복사
 COPY . .
 
-# TypeScript 빌드
-RUN npx tsc
+# 파일 확인 및 TypeScript 빌드
+RUN ls -la && npx tsc -p tsconfig.json
 
 # 프로덕션 의존성만 설치 (node_modules 제거 후 재설치)
 RUN rm -rf node_modules && npm install --omit=dev
