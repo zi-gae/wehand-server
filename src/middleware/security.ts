@@ -1,26 +1,29 @@
-import helmet from 'helmet';
-import cors from 'cors';
-import rateLimit from 'express-rate-limit';
-import { Request, Response, NextFunction } from 'express';
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import { Request, Response, NextFunction } from "express";
 
 export const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:5173',
-      'https://wehand.tennis'
+  origin: function (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) {
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:5173",
+      "https://wehand.zigae.com",
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('CORS 정책에 의해 차단된 요청입니다'));
+      callback(new Error("CORS 정책에 의해 차단된 요청입니다"));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 
 export const helmetConfig = helmet({
@@ -30,28 +33,32 @@ export const helmetConfig = helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.supabase.co", "wss://realtime.supabase.co"]
-    }
+      connectSrc: [
+        "'self'",
+        "https://api.supabase.co",
+        "wss://realtime.supabase.co",
+      ],
+    },
   },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
-    preload: true
-  }
+    preload: true,
+  },
 });
 
 export const rateLimitConfig = rateLimit({
   windowMs: 15 * 60 * 1000, // 15분
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 요청 제한
+  max: process.env.NODE_ENV === "production" ? 100 : 1000, // 요청 제한
   message: {
     success: false,
     error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.'
-    }
+      code: "RATE_LIMIT_EXCEEDED",
+      message: "너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.",
+    },
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 export const authRateLimit = rateLimit({
@@ -61,18 +68,24 @@ export const authRateLimit = rateLimit({
   message: {
     success: false,
     error: {
-      code: 'AUTH_RATE_LIMIT_EXCEEDED',
-      message: '로그인 시도가 너무 많습니다. 15분 후 다시 시도해주세요.'
-    }
-  }
+      code: "AUTH_RATE_LIMIT_EXCEEDED",
+      message: "로그인 시도가 너무 많습니다. 15분 후 다시 시도해주세요.",
+    },
+  },
 });
 
-export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+export const requestLogger = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const startTime = Date.now();
 
-  res.on('finish', () => {
+  res.on("finish", () => {
     const duration = Date.now() - startTime;
-    console.log(`${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`);
+    console.log(
+      `${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`
+    );
   });
 
   next();

@@ -6,7 +6,13 @@ import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { ServerToClientEvents, ClientToServerEvents, InterServerEvents, SocketData, TypedSocket } from "./types/socket";
+import {
+  ServerToClientEvents,
+  ClientToServerEvents,
+  InterServerEvents,
+  SocketData,
+  TypedSocket,
+} from "./types/socket";
 
 // 개발 환경에서만 SSL 검증 비활성화 (보안상 프로덕션에서는 사용 금지)
 if (process.env.NODE_ENV !== "production") {
@@ -32,13 +38,18 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
-const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(server, {
+const io = new Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+>(server, {
   cors: {
     origin: process.env.ALLOWED_ORIGINS?.split(",") || [
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:5173",
-      "https://wehand.tennis",
+      "https://wehand.zigae.com",
     ],
     credentials: true,
   },
