@@ -6,10 +6,10 @@ primary_region = "nrt"  # 도쿄 (한국과 가장 가까움)
 
 [env]
   NODE_ENV = "production"
-  PORT = "3000"
+  PORT = "8080"
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
@@ -24,12 +24,12 @@ primary_region = "nrt"  # 도쿄 (한국과 가장 가까움)
 
   # HTTP 헬스체크
   [[http_service.checks]]
-    interval = "10s"
-    grace_period = "5s" 
+    interval = "30s"
+    grace_period = "30s" 
     method = "GET"
     path = "/health"
     protocol = "http"
-    timeout = "2s"
+    timeout = "10s"
     tls_skip_verify = false
 
 # VM 리소스 설정

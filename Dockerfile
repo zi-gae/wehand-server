@@ -23,7 +23,7 @@ RUN ls -la && npx tsc -p tsconfig.json
 RUN rm -rf node_modules && npm install --omit=dev
 
 # 포트 설정
-EXPOSE 3000
+EXPOSE 8080
 
 # 애플리케이션 시작
 CMD ["npm", "start"]
