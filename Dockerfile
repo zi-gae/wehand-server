@@ -17,7 +17,7 @@ RUN npm install
 COPY . .
 
 # TypeScript 빌드
-RUN npm run build
+RUN npx tsc
 
 # 프로덕션 의존성만 설치 (node_modules 제거 후 재설치)
 RUN rm -rf node_modules && npm install --omit=dev
