@@ -1,5 +1,3 @@
-import { supabase } from "../lib/supabase";
-
 // 날짜 유틸리티
 export const formatDate = (
   date: Date | string,

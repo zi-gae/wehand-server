@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { supabase } from "../lib/supabase";
 import { ResponseHelper } from "../utils/response";
 import { ApiError, asyncHandler } from "../middleware/errorHandler";
