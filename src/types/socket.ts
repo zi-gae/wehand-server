@@ -27,6 +27,10 @@ export interface ServerToClientEvents {
     messageId: string;
     timestamp: string;
   }) => void;
+  "new-message": (data: any) => void;
+  "chat-room-updated": (data: any) => void;
+  "participant-approved": (data: any) => void;
+  "participant-approval-cancelled": (data: any) => void;
 }
 
 export interface ClientToServerEvents {
