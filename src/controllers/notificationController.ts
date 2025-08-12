@@ -7,9 +7,13 @@ import { z } from "zod";
 
 // Validation schemas
 const updateFcmTokenSchema = z.object({
-  token: z.string().min(1),
-  platform: z.enum(["ios", "android", "web"]),
-  device_info: z.object({}).optional(),
+  fcmToken: z.string().min(1),
+  deviceType: z.enum(["ios", "android", "web"]).optional().default("web"),
+  deviceInfo: z.object({
+    userAgent: z.string().optional(),
+    platform: z.string().optional(),
+    language: z.string().optional(),
+  }).optional(),
 });
 
 const updateNotificationSettingsSchema = z.object({
@@ -471,46 +475,13 @@ export const updateFcmToken = async (req: AuthRequest, res: Response) => {
       throw new ApiError(400, "입력값이 올바르지 않습니다", "VALIDATION_ERROR");
     }
 
-    const { token, platform, device_info } = validation.data;
+    const { fcmToken, deviceType, deviceInfo } = validation.data;
 
-    // 기존 토큰이 있는지 확인
-    const { data: existingToken } = await supabase
-      .from("push_tokens")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("token", token)
-      .single();
-
-    if (existingToken) {
-      // 기존 토큰 업데이트
-      const { error } = await supabase
-        .from("push_tokens")
-        .update({
-          platform,
-          device_info,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-          last_used_at: new Date().toISOString(),
-        })
-        .eq("id", existingToken.id);
-
-      if (error) {
-        throw new ApiError(500, "FCM 토큰 업데이트 실패", "DATABASE_ERROR");
-      }
-    } else {
-      // 새 토큰 등록
-      const { error } = await supabase.from("push_tokens").insert({
-        user_id: userId,
-        token,
-        platform,
-        device_info,
-        is_active: true,
-      });
-
-      if (error) {
-        throw new ApiError(500, "FCM 토큰 등록 실패", "DATABASE_ERROR");
-      }
-    }
+    // Push Notification Service 임포트
+    const { saveFCMToken } = await import('../services/pushNotificationService');
+    
+    // 토큰 저장
+    await saveFCMToken(userId, fcmToken, deviceType || 'web', deviceInfo);
 
     res.json({
       success: true,

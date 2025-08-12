@@ -457,6 +457,25 @@ router.delete(
  * /api/notifications/fcm-token:
  *   post:
  *     summary: FCM 토큰 등록/업데이트
+ *     description: |
+ *       Firebase Cloud Messaging(FCM) 푸시 알림을 위한 토큰을 등록하거나 업데이트합니다.
+ *       
+ *       **사용 시나리오:**
+ *       - 사용자가 푸시 알림 권한을 허용했을 때
+ *       - FCM 토큰이 갱신되었을 때 (24시간마다)
+ *       - 새로운 디바이스에서 로그인했을 때
+ *       
+ *       **토큰 관리:**
+ *       - 같은 토큰이 이미 존재하면 업데이트
+ *       - 새로운 토큰이면 추가
+ *       - 사용자당 여러 디바이스 토큰 지원
+ *       
+ *       **푸시 알림 타입:**
+ *       - 채팅 메시지 알림
+ *       - 매치 참가 승인/거부 알림
+ *       - 매치 시작 알림
+ *       - 커뮤니티 알림 (댓글, 좋아요)
+ *       - 시스템 공지사항
  *     tags: [Notifications]
  *     security:
  *       - BearerAuth: []
@@ -466,21 +485,71 @@ router.delete(
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/UpdateFcmTokenRequest'
+ *           examples:
+ *             web:
+ *               summary: 웹 브라우저에서 토큰 등록
+ *               value:
+ *                 fcmToken: "dA1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ..."
+ *                 deviceType: "web"
+ *                 deviceInfo:
+ *                   userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..."
+ *                   platform: "MacIntel"
+ *                   language: "ko-KR"
+ *             mobile:
+ *               summary: 모바일 앱에서 토큰 등록
+ *               value:
+ *                 fcmToken: "fCm_ToKeN_FrOm_MoBiLe_ApP..."
+ *                 deviceType: "ios"
+ *                 deviceInfo:
+ *                   userAgent: "WeHand/1.0.0 (iPhone; iOS 17.0)"
+ *                   platform: "iPhone14,2"
+ *                   language: "ko-KR"
  *     responses:
  *       200:
  *         description: FCM 토큰 등록/업데이트 성공
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: "FCM 토큰이 등록/업데이트되었습니다"
  *       400:
  *         description: 입력값 오류
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               missing_token:
+ *                 summary: 토큰 누락
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: "TOKEN_REQUIRED"
+ *                     message: "FCM 토큰이 필요합니다"
+ *               invalid_device_type:
+ *                 summary: 잘못된 디바이스 타입
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: "VALIDATION_ERROR"
+ *                     message: "입력값이 올바르지 않습니다"
  *       401:
  *         description: 인증 필요
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: 서버 내부 오류
  *         content:
  *           application/json:
  *             schema:

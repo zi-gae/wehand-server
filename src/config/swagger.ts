@@ -1507,25 +1507,41 @@ const swaggerDefinition = {
 
       UpdateFcmTokenRequest: {
         type: "object",
-        required: ["fcm_token", "device_type", "device_id"],
+        required: ["fcmToken"],
         properties: {
-          fcm_token: {
+          fcmToken: {
             type: "string",
             minLength: 1,
-            example: "dA1B2c3D4e5F6g7H8i9J0...",
-            description: "FCM 토큰 (필수)",
+            example: "dA1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ...",
+            description: "Firebase Cloud Messaging 토큰 (필수)",
           },
-          device_type: {
+          deviceType: {
             type: "string",
             enum: ["ios", "android", "web"],
-            example: "ios",
-            description: "디바이스 유형 (필수)",
+            example: "web",
+            default: "web",
+            description: "디바이스 유형 (선택, 기본값: web)",
           },
-          device_id: {
-            type: "string",
-            minLength: 1,
-            example: "iPhone_12_Pro_UUID",
-            description: "디바이스 고유 ID (필수)",
+          deviceInfo: {
+            type: "object",
+            description: "디바이스 추가 정보 (선택)",
+            properties: {
+              userAgent: {
+                type: "string",
+                example: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...",
+                description: "브라우저 User Agent",
+              },
+              platform: {
+                type: "string",
+                example: "MacIntel",
+                description: "플랫폼 정보",
+              },
+              language: {
+                type: "string",
+                example: "ko-KR",
+                description: "언어 설정",
+              },
+            },
           },
         },
       },
