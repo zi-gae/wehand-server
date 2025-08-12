@@ -50,7 +50,7 @@ export const matchController = {
           description, price,
           recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
           created_at,
-          venues!inner(id, name, address, location),
+          venues!inner(id, name, address, location, region),
           users!host_id(name, ntrp, experience_years)
         `,
           { count: "exact" }
@@ -69,7 +69,7 @@ export const matchController = {
           description, price,
           recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
           created_at,
-          venues!inner(name, address),
+          venues!inner(name, address, region),
           users(name, ntrp, experience_years)
         `,
             { count: "exact" }
@@ -86,7 +86,7 @@ export const matchController = {
           description, price,
           recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
           created_at,
-          venues(name, address),
+          venues(name, address, region),
           users(name, ntrp, experience_years)
         `,
             { count: "exact" }
@@ -157,8 +157,8 @@ export const matchController = {
     const { data: matches, error, count } = await query;
 
     if (region) {
-      console.log("Final matches after all filters:");
-      console.log(region, matches);
+      console.log("Final matches after all filters:", matches, region);
+      query = query.filter("venues.region", "ilike", `%${region}%`);
     }
 
     if (error) {
@@ -295,7 +295,7 @@ export const matchController = {
         description, price,
         recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
         rules, equipment, parking_info,
-        venues(name, address, amenities),
+        venues(name, address, region, amenities),
         users!host_id(name, ntrp, experience_years)
       `
       )
@@ -814,7 +814,7 @@ export const matchController = {
       );
     }
 
-    // 기존 1:1 채팅방 확인 (같은 매치 + 같은 사용자들)
+    // 기존 1:1 채팅방 확인
     const { data: existingChats } = await supabase
       .from("chat_rooms")
       .select(
@@ -822,14 +822,12 @@ export const matchController = {
         id,
         name,
         type,
-        match_id,
         chat_participants!inner(user_id)
       `
       )
-      .eq("type", "private")
-      .eq("match_id", matchId);
+      .eq("type", "private");
 
-    // 같은 매치에서 두 사용자가 모두 참여한 채팅방 찾기
+    // 두 사용자가 모두 참여한 채팅방 찾기
     let existingPrivateChat = null;
     if (existingChats) {
       for (const chat of existingChats) {
