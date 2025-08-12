@@ -48,7 +48,7 @@ export const helmetConfig = helmet({
 
 export const rateLimitConfig = rateLimit({
   windowMs: 15 * 60 * 1000, // 15분
-  max: process.env.NODE_ENV === "production" ? 100 : 1000, // 요청 제한
+  max: process.env.NODE_ENV === "production" ? 1000 : 1000, // 요청 제한
   message: {
     success: false,
     error: {
