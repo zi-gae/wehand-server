@@ -814,7 +814,7 @@ export const matchController = {
       );
     }
 
-    // 기존 1:1 채팅방 확인
+    // 기존 1:1 채팅방 확인 (같은 매치 + 같은 사용자들)
     const { data: existingChats } = await supabase
       .from("chat_rooms")
       .select(
@@ -822,12 +822,14 @@ export const matchController = {
         id,
         name,
         type,
+        match_id,
         chat_participants!inner(user_id)
       `
       )
-      .eq("type", "private");
+      .eq("type", "private")
+      .eq("match_id", matchId);
 
-    // 두 사용자가 모두 참여한 채팅방 찾기
+    // 같은 매치에서 두 사용자가 모두 참여한 채팅방 찾기
     let existingPrivateChat = null;
     if (existingChats) {
       for (const chat of existingChats) {
