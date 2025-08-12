@@ -208,7 +208,7 @@ router.get("/unread-count", requireAuth, notificationController.getUnreadCount);
  *                 data:
  *                   type: object
  *                   properties:
- *                     unreadChatCount:
+ *                     count:
  *                       type: integer
  *                       description: 읽지 않은 채팅 메시지 개수
  *                       example: 5
@@ -218,13 +218,13 @@ router.get("/unread-count", requireAuth, notificationController.getUnreadCount);
  *                 value:
  *                   success: true
  *                   data:
- *                     unreadChatCount: 12
+ *                     count: 12
  *               no_unread:
  *                 summary: 읽지 않은 메시지가 없는 경우
  *                 value:
  *                   success: true
  *                   data:
- *                     unreadChatCount: 0
+ *                     count: 0
  *       401:
  *         description: 인증 실패
  *         content:

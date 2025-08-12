@@ -75,7 +75,7 @@ export const matchController = {
             { count: "exact" }
           )
           .in("status", ["recruiting", "full", "confirmed"])
-          .ilike("venues.address", `%${region}%`);
+          .ilike("venues.region", `%${region}%`);
       } else {
         query = supabase
           .from("matches")
@@ -158,7 +158,7 @@ export const matchController = {
 
     if (region) {
       console.log("Final matches after all filters:", matches, region);
-      query = query.filter("venues.region", "ilike", `%${region}%`);
+      // query = query.filter("venues.region", "ilike", `%${region}%`);
     }
 
     if (error) {
