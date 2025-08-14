@@ -1379,7 +1379,7 @@ const swaggerDefinition = {
             example: "매너가 좋으시고 실력도 뛰어나셔서 즐거운 경기였습니다.",
             description: "리뷰 내용",
           },
-          createdAt: {
+          created_at: {
             type: "string",
             format: "date-time",
             description: "작성일시",
@@ -1395,7 +1395,7 @@ const swaggerDefinition = {
                 type: "string",
                 example: "즐거운 주말 단식",
               },
-              date: {
+              match_date: {
                 type: "string",
                 format: "date",
               },
@@ -1408,11 +1408,40 @@ const swaggerDefinition = {
                 type: "string",
                 format: "uuid",
               },
-              name: {
+              nickname: {
                 type: "string",
                 example: "TennisPlayer",
               },
+              name: {
+                type: "string",
+                example: "김테니스",
+              },
+              profile_image_url: {
+                type: "string",
+                format: "uri",
+                description: "프로필 이미지 URL",
+              },
             },
+          },
+        },
+      },
+
+      UserReviewsResponse: {
+        type: "object",
+        properties: {
+          success: {
+            type: "boolean",
+            example: true,
+          },
+          data: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/Review",
+            },
+            description: "사용자가 받은 리뷰 목록",
+          },
+          pagination: {
+            $ref: "#/components/schemas/PaginationInfo",
           },
         },
       },
@@ -1833,8 +1862,33 @@ const swaggerDefinition = {
                 format: "uuid",
               },
               content: {
-                type: "string",
-                example: "네, 저도 잘 부탁드립니다!",
+                oneOf: [
+                  {
+                    type: "string",
+                    example: "네, 저도 잘 부탁드립니다!",
+                  },
+                  {
+                    type: "object",
+                    properties: {
+                      participantId: {
+                        type: "string",
+                        example: "123e4567-e89b-12d3-a456-426614174001",
+                      },
+                      participantName: { type: "string", example: "김테니스" },
+                      type: {
+                        type: "string",
+                        enum: ["approve_request", "cancel_approval"],
+                        example: "approve_request",
+                      },
+                    },
+                    required: ["participantId", "participantName", "type"],
+                    example: {
+                      participantId: "123e4567-e89b-12d3-a456-426614174001",
+                      participantName: "김테니스",
+                      type: "approve_request",
+                    },
+                  },
+                ],
               },
               sender: {
                 type: "object",
