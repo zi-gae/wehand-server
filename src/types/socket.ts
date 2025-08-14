@@ -31,6 +31,7 @@ export interface ServerToClientEvents {
   "chat-room-updated": (data: any) => void;
   "participant-approved": (data: any) => void;
   "participant-approval-cancelled": (data: any) => void;
+  "chatroom-deleted": (data: any) => void;
 }
 
 export interface ClientToServerEvents {

@@ -191,8 +191,17 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
       })
     );
 
-    // null 값 필터링
-    const validRooms = processedRooms.filter((room) => room !== null);
+    // null 값 필터링 및 최신순 정렬
+    const validRooms = processedRooms
+      .filter((room) => room !== null)
+      .sort((a, b) => {
+        // 마지막 메시지가 있는 경우 해당 시간 기준으로 정렬
+        const timeA =
+          a?.lastMessage?.created_at || a?.updatedAt || "1970-01-01";
+        const timeB =
+          b?.lastMessage?.created_at || b?.updatedAt || "1970-01-01";
+        return new Date(timeB).getTime() - new Date(timeA).getTime();
+      });
 
     const totalPages = Math.ceil((count || 0) / Number(limit));
 
@@ -1127,6 +1136,150 @@ export const joinChatRoom = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// 채팅방 삭제
+export const deleteChatRoom = async (req: AuthRequest, res: Response) => {
+  try {
+    const { chatRoomId } = req.params;
+    const userId = req.userId!;
+
+    // 채팅방 정보 조회
+    const { data: chatRoom, error: roomError } = await supabase
+      .from("chat_rooms")
+      .select("id, type, match_id")
+      .eq("id", chatRoomId)
+      .single();
+
+    if (roomError || !chatRoom) {
+      throw new ApiError(
+        404,
+        "채팅방을 찾을 수 없습니다",
+        "CHATROOM_NOT_FOUND"
+      );
+    }
+
+    // 매치 채팅방인 경우 호스트 권한 확인
+    if (chatRoom.type === "match" && chatRoom.match_id) {
+      const { data: match } = await supabase
+        .from("matches")
+        .select("host_id")
+        .eq("id", chatRoom.match_id)
+        .single();
+
+      if (!match || match.host_id !== userId) {
+        throw new ApiError(
+          403,
+          "매치 호스트만 채팅방을 삭제할 수 있습니다",
+          "NOT_HOST"
+        );
+      }
+    } else if (chatRoom.type === "private") {
+      // 1:1 채팅방인 경우 참가자 권한 확인
+      const { data: participation } = await supabase
+        .from("chat_participants")
+        .select("id")
+        .eq("room_id", chatRoomId)
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .single();
+
+      if (!participation) {
+        throw new ApiError(
+          403,
+          "채팅방 참가자만 삭제할 수 있습니다",
+          "NOT_PARTICIPANT"
+        );
+      }
+    }
+
+    // 채팅방 삭제 시스템 메시지 전송
+    const { data: user } = await supabase
+      .from("users")
+      .select("nickname")
+      .eq("id", userId)
+      .single();
+
+    const { data: systemMessage } = await supabase
+      .from("messages")
+      .insert({
+        room_id: chatRoomId,
+        sender_id: null,
+        content: `${user?.nickname || "사용자"}님이 채팅방을 삭제했습니다.`,
+        message_type: "system",
+      })
+      .select("id, content, message_type, created_at")
+      .single();
+
+    // 실시간 삭제 알림 브로드캐스트
+    io.to(`chat-${chatRoomId}`).emit("chatroom-deleted", {
+      chatRoomId,
+      deletedBy: userId,
+      nickname: user?.nickname,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (systemMessage) {
+      io.to(`chat-${chatRoomId}`).emit("new-message", {
+        id: systemMessage.id,
+        content: systemMessage.content,
+        messageType: systemMessage.message_type,
+        sender: null,
+        timestamp: systemMessage.created_at,
+        chatRoomId: chatRoomId,
+      });
+    }
+
+    // 모든 참가자 비활성화
+    await supabase
+      .from("chat_participants")
+      .update({
+        is_active: false,
+        left_at: new Date().toISOString(),
+      })
+      .eq("room_id", chatRoomId);
+
+    // 채팅방 soft delete (실제로는 비활성화)
+    const { error: deleteError } = await supabase
+      .from("chat_rooms")
+      .update({
+        is_active: false,
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
+      })
+      .eq("id", chatRoomId);
+
+    if (deleteError) {
+      throw new ApiError(500, "채팅방 삭제 실패", "DATABASE_ERROR");
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: "채팅방이 삭제되었습니다",
+      },
+    });
+  } catch (error: any) {
+    logger.error("채팅방 삭제 실패:", error);
+
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "서버 내부 오류가 발생했습니다",
+      },
+    });
+  }
+};
+
 // 채팅방 나가기
 export const leaveChatRoom = async (req: AuthRequest, res: Response) => {
   try {
@@ -1709,4 +1862,5 @@ export const chatController = {
   leaveChatRoom,
   approveMatchParticipant,
   cancelMatchApproval,
+  deleteChatRoom,
 };

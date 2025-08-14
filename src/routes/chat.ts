@@ -632,4 +632,88 @@ router.post(
   chatController.cancelMatchApproval
 );
 
+/**
+ * @swagger
+ * /api/chat/rooms/{chatRoomId}:
+ *   delete:
+ *     summary: 채팅방 삭제
+ *     description: 채팅방을 삭제합니다. 매치 채팅방의 경우 호스트만 삭제 가능하고, 1:1 채팅방의 경우 참가자 모두 삭제 가능합니다. 실제로는 soft delete로 처리되며, 시스템 메시지가 추가됩니다.
+ *     tags: [Chat]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatRoomId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 채팅방 ID
+ *     responses:
+ *       200:
+ *         description: 채팅방 삭제 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: 채팅방이 삭제되었습니다
+ *                     roomId:
+ *                       type: string
+ *                       format: uuid
+ *                       description: 삭제된 채팅방 ID
+ *       400:
+ *         description: 잘못된 요청 (이미 삭제된 채팅방 등)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: CHATROOM_ALREADY_INACTIVE
+ *                 message: 이미 삭제된 채팅방입니다
+ *       403:
+ *         description: 권한 없음 (매치 채팅방에서 호스트가 아닌 경우 등)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               notHost:
+ *                 summary: 매치 채팅방 호스트가 아님
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: NOT_HOST
+ *                     message: 매치 채팅방은 호스트만 삭제할 수 있습니다
+ *               notParticipant:
+ *                 summary: 채팅방 참가자가 아님
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: NOT_PARTICIPANT
+ *                     message: 채팅방 참가자만 삭제할 수 있습니다
+ *       404:
+ *         description: 채팅방을 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: CHATROOM_NOT_FOUND
+ *                 message: 채팅방을 찾을 수 없습니다
+ */
+router.delete("/rooms/:chatRoomId", requireAuth, chatController.deleteChatRoom);
+
 export default router;
