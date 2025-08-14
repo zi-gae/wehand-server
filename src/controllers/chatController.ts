@@ -6,6 +6,7 @@ import { logger } from "../config/logger";
 import { z } from "zod";
 import { io } from "../app";
 import { createChatMessageNotifications } from "../services/chatNotificationService";
+import { safeJsonParse } from "../utils/safeJsonParse";
 
 // Validation schemas
 const sendMessageSchema = z.object({
@@ -52,6 +53,11 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
     // 각 채팅방의 상세 정보를 별도로 조회
     const processedRooms = await Promise.all(
       (chatRooms || []).map(async (participant: any) => {
+        // last_read_message_id가 null인 경우 제외
+        if (participant.last_read_message_id === null) {
+          return null;
+        }
+
         // 채팅방 기본 정보 조회
         const { data: room } = await supabase
           .from("chat_rooms")
@@ -175,6 +181,7 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
           lastMessage: lastMessage
             ? {
                 ...lastMessage,
+                content: safeJsonParse(lastMessage.content),
                 sender: senderInfo,
               }
             : null,
@@ -523,9 +530,14 @@ export const getAllMessages = async (req: AuthRequest, res: Response) => {
       throw new ApiError(500, "메시지 조회 실패", "DATABASE_ERROR");
     }
 
+    const responseMessages = messages.map((message) => ({
+      ...message,
+      content: safeJsonParse(message.content),
+    }));
+
     res.json({
       success: true,
-      data: messages || [],
+      data: responseMessages || [],
     });
   } catch (error: any) {
     logger.error("메시지 조회 실패:", error);

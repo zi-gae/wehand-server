@@ -589,11 +589,92 @@ export const getBookmarkedMatches = async (req: AuthRequest, res: Response) => {
   }
 };
 
+
+// 특정 사용자의 리뷰 조회 (공개)
+export const getUserReviews = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { page = "1", limit = "10" } = req.query;
+
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const {
+      data: reviews,
+      error,
+      count,
+    } = await supabase
+      .from("match_reviews")
+      .select(
+        `
+        id,
+        rating,
+        comment,
+        created_at,
+        reviewer:reviewer_id(
+          id,
+          nickname,
+          name,
+          profile_image_url
+        ),
+        match:match_id(
+          id,
+          title,
+          match_date
+        )
+      `,
+        { count: "exact" }
+      )
+      .eq("reviewee_id", userId)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + Number(limit) - 1);
+
+    if (error) {
+      throw new ApiError(500, "리뷰 조회 실패", "DATABASE_ERROR", true, error);
+    }
+
+    const totalPages = Math.ceil((count || 0) / Number(limit));
+
+    res.json({
+      success: true,
+      data: reviews,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: count || 0,
+        totalPages,
+        hasNext: Number(page) < totalPages,
+        hasPrev: Number(page) > 1,
+      },
+    });
+  } catch (error: any) {
+    logger.error("사용자 리뷰 조회 실패:", error);
+
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "서버 내부 오류가 발생했습니다",
+      },
+    });
+  }
+};
+
 export const profileController = {
   getMyProfile,
   updateProfile,
   getUserProfile,
   getMyMatches,
   getMyReviews,
+  getUserReviews,
   getBookmarkedMatches,
 };

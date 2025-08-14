@@ -222,6 +222,62 @@ router.get('/my-reviews', requireAuth, profileController.getMyReviews);
 
 /**
  * @swagger
+ * /api/profile/users/{userId}/reviews:
+ *   get:
+ *     summary: 특정 사용자가 받은 리뷰 조회
+ *     tags: [Profile]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: 페이지 번호
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: 페이지 크기
+ *     responses:
+ *       200:
+ *         description: 사용자 리뷰 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Review'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/PaginationInfo'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get('/users/:userId/reviews', profileController.getUserReviews);
+
+
+/**
+ * @swagger
  * /api/profile/bookmarks:
  *   get:
  *     summary: 북마크한 매치 조회
