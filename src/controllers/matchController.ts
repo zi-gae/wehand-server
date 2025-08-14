@@ -97,17 +97,8 @@ export const matchController = {
 
     // 검색어 필터
     if (search) {
-      if (sort === "distance" && user_lat && user_lng) {
-        // 거리순 정렬 시 venues 조인 구조에 맞게 검색
-        query = query.or(
-          `title.ilike.%${search}%,description.ilike.%${search}%,venues.name.ilike.%${search}%`
-        );
-      } else {
-        // 기본 조회 시 venues 조인 구조에 맞게 검색
-        query = query.or(
-          `title.ilike.%${search}%,description.ilike.%${search}%,venues.name.ilike.%${search}%`
-        );
-      }
+      // matches 테이블 필드만 검색 (venues.name은 별도 처리 필요)
+      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
     }
     // 지역 필터는 쿼리 생성 후 적용하지 않고, select 시점에 처리
 
@@ -814,7 +805,7 @@ export const matchController = {
       );
     }
 
-    // 기존 1:1 채팅방 확인
+    // 기존 1:1 채팅방 확인 (같은 매치에 대한 채팅방만)
     const { data: existingChats } = await supabase
       .from("chat_rooms")
       .select(
@@ -822,10 +813,12 @@ export const matchController = {
         id,
         name,
         type,
+        match_id,
         chat_participants!inner(user_id)
       `
       )
-      .eq("type", "private");
+      .eq("type", "private")
+      .eq("match_id", matchId);
 
     // 두 사용자가 모두 참여한 채팅방 찾기
     let existingPrivateChat = null;
