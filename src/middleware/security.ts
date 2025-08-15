@@ -15,17 +15,18 @@ export const corsOptions = {
     ];
 
     // iOS/Android 모바일 앱에서의 요청 허용
-    const isMobileAppOrigin = !origin || 
-                              allowedOrigins.includes(origin) || 
-                              origin.startsWith('capacitor://') || 
-                              origin.startsWith('file://') ||
-                              origin.includes('10.0.2.2') || // Android 에뮬레이터
-                              origin.includes('localhost');
-    
+    const isMobileAppOrigin =
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.startsWith("capacitor://") ||
+      origin.startsWith("file://") ||
+      origin.includes("10.0.2.2") || // Android 에뮬레이터
+      origin.includes("localhost");
+
     if (isMobileAppOrigin) {
       callback(null, true);
     } else {
-      callback(new Error("CORS 정책에 의해 차단된 요청입니다"));
+      callback(new Error(`CORS 정책에 의해 차단된 요청입니다. ${origin}`));
     }
   },
   credentials: true,
