@@ -24,13 +24,24 @@ export const requireAuth = async (
   next: NextFunction
 ) => {
   try {
+    // 쿠키 로그 추가
+    console.log("🍪 쿠키 확인:", {
+      cookies: req.headers.cookie,
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      userAgent: req.headers["user-agent"]?.substring(0, 100),
+      authorization: req.headers.authorization,
+    });
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("❌ Authorization 헤더 없음");
       throw new ApiError(401, "인증 토큰이 필요합니다", "MISSING_TOKEN");
     }
 
     const token = authHeader.substring(7);
+    console.log("✅ Authorization 헤더 있음, 토큰 길이:", token.length);
 
     const {
       data: { user },
@@ -38,6 +49,7 @@ export const requireAuth = async (
     } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.log("❌ 토큰 검증 실패:", error?.message);
       logger.warn("Invalid token attempt:", {
         token: token.substring(0, 20) + "...",
         error: error?.message,
@@ -45,6 +57,8 @@ export const requireAuth = async (
       });
       throw new ApiError(401, "유효하지 않은 토큰입니다", "INVALID_TOKEN");
     }
+
+    console.log("✅ 토큰 검증 성공, 사용자:", user.email);
 
     // 사용자 정보를 데이터베이스에서 가져오기
     const { data: userData, error: userError } = await supabase
