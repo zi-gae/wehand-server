@@ -24,13 +24,26 @@ export const requireAuth = async (
   next: NextFunction
 ) => {
   try {
+    // 쿠키 파싱
+    const parseCookies = (cookieString: string | undefined) => {
+      if (!cookieString) return {};
+      return cookieString.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+    };
+    
+    const cookies = parseCookies(req.headers.cookie);
+    
     // 쿠키 로그 추가
     console.log("🍪 쿠키 확인:", {
-      cookies: req.headers.cookie,
+      rawCookies: req.headers.cookie,
+      parsedCookies: cookies,
+      sbAccessToken: cookies['sb-access-token'] ? '있음' : '없음',
+      sbRefreshToken: cookies['sb-refresh-token'] ? '있음' : '없음',
       origin: req.headers.origin,
-      referer: req.headers.referer,
-      userAgent: req.headers["user-agent"]?.substring(0, 100),
-      authorization: req.headers.authorization,
+      authorization: req.headers.authorization ? '있음' : '없음',
     });
 
     const authHeader = req.headers.authorization;

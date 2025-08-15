@@ -12,6 +12,7 @@ import profileRoutes from './profile';
 import notificationRoutes from './notifications';
 import chatRoutes from './chat';
 import reviewRoutes from './reviewRoutes';
+import logRoutes from './logs';
 
 const router = Router();
 
@@ -54,5 +55,6 @@ router.use('/profile', profileRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/chat', chatRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/logs', logRoutes);
 
 export default router;
