@@ -12,6 +12,7 @@ export const corsOptions = {
       "http://localhost:3000",
       "http://localhost:5173",
       "https://wehand.zigae.com",
+      "https://wehand.app",
     ];
 
     // iOS/Android 모바일 앱에서의 요청 허용
