@@ -64,6 +64,7 @@ app.use(rateLimitConfig);
 
 // 요청 로깅
 if (process.env.NODE_ENV === "production") {
+  app.use(requestLogger);
   app.use(
     morgan("combined", {
       stream: { write: (message) => logger.info(message.trim()) },
@@ -71,7 +72,6 @@ if (process.env.NODE_ENV === "production") {
   );
 } else {
   app.use(morgan("dev"));
-  app.use(requestLogger);
 }
 
 // 압축 및 파싱
