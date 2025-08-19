@@ -34,7 +34,23 @@ export const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization", 
+    "X-Requested-With",
+    "Accept",
+    "Accept-Language",
+    "Accept-Encoding",
+    "Cache-Control",
+    "Connection",
+    "Host",
+    "Origin",
+    "Referer",
+    "User-Agent",
+    "X-Forwarded-For",
+    "X-Forwarded-Proto",
+    "X-Real-IP"
+  ],
 };
 
 export const helmetConfig = helmet({
