@@ -60,7 +60,6 @@ const PORT = process.env.PORT || 3000;
 // 보안 미들웨어
 app.use(helmetConfig);
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 app.use(rateLimitConfig);
 
 // 요청 로깅
