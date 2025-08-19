@@ -24,6 +24,8 @@ export const corsOptions = {
       origin.includes("10.0.2.2") || // Android 에뮬레이터
       origin.includes("localhost");
 
+    console.log("CORS 요청:", isMobileAppOrigin, origin);
+
     if (isMobileAppOrigin) {
       callback(null, true);
     } else {
@@ -31,7 +33,7 @@ export const corsOptions = {
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 

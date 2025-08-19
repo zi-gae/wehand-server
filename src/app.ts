@@ -49,6 +49,7 @@ const io = new Server<
       "http://localhost:3000",
       "http://localhost:5173",
       "https://wehand.zigae.com",
+      "https://wehand.app",
     ],
     credentials: true,
   },
@@ -59,6 +60,7 @@ const PORT = process.env.PORT || 3000;
 // 보안 미들웨어
 app.use(helmetConfig);
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(rateLimitConfig);
 
 // 요청 로깅
