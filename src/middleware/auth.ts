@@ -27,44 +27,63 @@ export const requireAuth = async (
     // 쿠키 파싱
     const parseCookies = (cookieString: string | undefined) => {
       if (!cookieString) return {};
-      return cookieString.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
+      return cookieString.split(";").reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split("=");
         acc[key] = value;
         return acc;
       }, {} as Record<string, string>);
     };
-    
+
     const cookies = parseCookies(req.headers.cookie);
-    
+
     // 쿠키 로그 추가
-    console.log("🍪 쿠키 확인:", {
+    console.log("🍪 쿠키 및 쿼리 확인:", {
       rawCookies: req.headers.cookie,
       parsedCookies: cookies,
-      sbAccessToken: cookies['sb-access-token'] ? '있음' : '없음',
-      sbRefreshToken: cookies['sb-refresh-token'] ? '있음' : '없음',
+      sbAccessToken: cookies["sb-access-token"] ? "있음" : "없음",
+      sbRefreshToken: cookies["sb-refresh-token"] ? "있음" : "없음",
+      queryToken: req.query.token ? "있음" : "없음",
       origin: req.headers.origin,
-      authorization: req.headers.authorization ? '있음' : '없음',
+      authorization: req.headers.authorization ? "있음" : "없음",
     });
 
-    const authHeader = req.headers.authorization;
+    // 토큰 우선순위: Authorization 헤더 > 쿼리스트링 > 쿠키
+    let authToken = "";
+    
+    // 1. Authorization 헤더 확인
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+      authToken = req.headers.authorization.substring(7);
+    }
+    // 2. 쿼리스트링에서 token 파라미터 확인 (Android용)
+    else if (req.query.token && typeof req.query.token === "string") {
+      authToken = req.query.token;
+    }
+    // 3. 쿠키에서 확인
+    else if (cookies["sb-access-token"]) {
+      const cookieAuth = cookies["sb-access-token"];
+      if (cookieAuth.startsWith("Bearer ")) {
+        authToken = cookieAuth.substring(7);
+      } else {
+        authToken = cookieAuth;
+      }
+    }
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.log("❌ Authorization 헤더 없음");
+    if (!authToken) {
+      console.log("❌ 토큰이 없음 - 헤더, 쿼리, 쿠키 모두 확인함");
       throw new ApiError(401, "인증 토큰이 필요합니다", "MISSING_TOKEN");
     }
 
-    const token = authHeader.substring(7);
-    console.log("✅ Authorization 헤더 있음, 토큰 길이:", token.length);
+    console.log("✅ 토큰 발견, 길이:", authToken.length);
 
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser(token);
+    } = await supabase.auth.getUser(authToken);
 
     if (error || !user) {
       console.log("❌ 토큰 검증 실패:", error?.message);
       logger.warn("Invalid token attempt:", {
-        token: token.substring(0, 20) + "...",
+        token: authToken.substring(0, 20) + "...",
         error: error?.message,
         ip: req.ip,
       });
@@ -114,18 +133,47 @@ export const optionalAuth = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    // 쿠키 파싱
+    const parseCookies = (cookieString: string | undefined) => {
+      if (!cookieString) return {};
+      return cookieString.split(";").reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split("=");
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+    };
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return next();
+    const cookies = parseCookies(req.headers.cookie);
+
+    // 토큰 우선순위: Authorization 헤더 > 쿼리스트링 > 쿠키
+    let authToken = "";
+    
+    // 1. Authorization 헤더 확인
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+      authToken = req.headers.authorization.substring(7);
+    }
+    // 2. 쿼리스트링에서 token 파라미터 확인 (Android용)
+    else if (req.query.token && typeof req.query.token === "string") {
+      authToken = req.query.token;
+    }
+    // 3. 쿠키에서 확인
+    else if (cookies["sb-access-token"]) {
+      const cookieAuth = cookies["sb-access-token"];
+      if (cookieAuth.startsWith("Bearer ")) {
+        authToken = cookieAuth.substring(7);
+      } else {
+        authToken = cookieAuth;
+      }
     }
 
-    const token = authHeader.substring(7);
+    if (!authToken) {
+      return next();
+    }
 
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser(token);
+    } = await supabase.auth.getUser(authToken);
 
     if (!error && user) {
       const { data: userData } = await supabase
