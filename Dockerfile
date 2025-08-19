@@ -1,5 +1,5 @@
-# Node.js 18 LTS 사용
-FROM node:18-alpine
+# Node.js 20 LTS 사용
+FROM node:20-alpine
 
 # 시스템 패키지 업데이트로 취약점 최소화
 RUN apk update && apk upgrade
