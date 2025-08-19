@@ -48,6 +48,8 @@ export const helmetConfig = helmet({
         "'self'",
         "https://api.supabase.co",
         "wss://realtime.supabase.co",
+        "capacitor:",
+        "ionic:",
       ],
     },
   },
