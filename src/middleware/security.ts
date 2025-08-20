@@ -20,6 +20,7 @@ export const corsOptions = {
       !origin ||
       allowedOrigins.includes(origin) ||
       origin.startsWith("capacitor://") ||
+      origin.startsWith("wehand://") ||
       origin.startsWith("file://") ||
       origin.includes("10.0.2.2") || // Android 에뮬레이터
       origin.includes("localhost");
@@ -36,7 +37,7 @@ export const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
-    "Authorization", 
+    "Authorization",
     "X-Requested-With",
     "Accept",
     "Accept-Language",
@@ -49,7 +50,7 @@ export const corsOptions = {
     "User-Agent",
     "X-Forwarded-For",
     "X-Forwarded-Proto",
-    "X-Real-IP"
+    "X-Real-IP",
   ],
 };
 
