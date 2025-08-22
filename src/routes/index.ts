@@ -13,6 +13,7 @@ import notificationRoutes from './notifications';
 import chatRoutes from './chat';
 import reviewRoutes from './reviewRoutes';
 import logRoutes from './logs';
+import pushNotificationRoutes from './pushNotifications';
 
 const router = Router();
 
@@ -38,7 +39,6 @@ router.get('/version', (req, res) => {
       'Match Management',
       'Community Posts',
       'Real-time Chat',
-      'Push Notifications',
       'Location-based Search'
     ]
   }, 'WeHand Tennis API Version Information');
@@ -53,6 +53,7 @@ router.use('/venues', venueRoutes);
 router.use('/community', communityRoutes);
 router.use('/profile', profileRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/push-notifications', pushNotificationRoutes);
 router.use('/chat', chatRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/logs', logRoutes);

@@ -89,7 +89,7 @@ GET /matches?search={query}&region={region}&gameType={gameType}&date={date}&time
 - date: 날짜 (YYYY-MM-DD)
 - timeSlots: 시간대 (comma separated)
 - ntrpMin, ntrpMax: NTRP 레벨 범위
-- experienceMin, experienceMax: 경력 범위 (년)
+- experienceMin, experienceMax: 구력 범위 (년)
 - sort: 정렬 (latest, distance, price)
 
 **Response:**

@@ -200,7 +200,7 @@ const swaggerDefinition = {
             minimum: 0,
             maximum: 50,
             example: 5,
-            description: "테니스 경력 (년)",
+            description: "테니스 구력 (년)",
           },
           favorite_style: {
             type: "string",
@@ -402,7 +402,7 @@ const swaggerDefinition = {
           hostExperience: {
             type: "string",
             example: "3년",
-            description: "호스트 경력",
+            description: "호스트 구력",
           },
           description: {
             type: "string",
@@ -467,7 +467,7 @@ const swaggerDefinition = {
                 experience: {
                   type: "string",
                   example: "3년",
-                  description: "참가자 경력",
+                  description: "참가자 구력",
                 },
                 isHost: {
                   type: "boolean",
@@ -577,13 +577,13 @@ const swaggerDefinition = {
             type: "integer",
             minimum: 0,
             example: 2,
-            description: "모집 최소 경력 (선택, 년 단위)",
+            description: "모집 최소 구력 (선택, 년 단위)",
           },
           recruit_experience_max: {
             type: "integer",
             minimum: 0,
             example: 5,
-            description: "모집 최대 경력 (선택, 년 단위)",
+            description: "모집 최대 구력 (선택, 년 단위)",
           },
           price: {
             type: "integer",
@@ -1179,7 +1179,7 @@ const swaggerDefinition = {
             minimum: 0,
             maximum: 50,
             example: 5,
-            description: "테니스 경력 (선택, 년 단위, 0-50)",
+            description: "테니스 구력 (선택, 년 단위, 0-50)",
           },
           favorite_style: {
             type: "string",
@@ -1542,14 +1542,14 @@ const swaggerDefinition = {
             type: "string",
             minLength: 1,
             example: "dA1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ...",
-            description: "Firebase Cloud Messaging 토큰 (필수)",
+            description: "모바일 푸시 알림 토큰 (필수)",
           },
           deviceType: {
             type: "string",
-            enum: ["ios", "android", "web"],
-            example: "web",
-            default: "web",
-            description: "디바이스 유형 (선택, 기본값: web)",
+            enum: ["ios", "android"],
+            example: "ios",
+            default: "ios",
+            description: "디바이스 유형 (선택, 기본값: ios)",
           },
           deviceInfo: {
             type: "object",
@@ -1557,12 +1557,13 @@ const swaggerDefinition = {
             properties: {
               userAgent: {
                 type: "string",
-                example: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...",
-                description: "브라우저 User Agent",
+                example:
+                  "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)...",
+                description: "모바일 User Agent",
               },
               platform: {
                 type: "string",
-                example: "MacIntel",
+                example: "iPhone",
                 description: "플랫폼 정보",
               },
               language: {

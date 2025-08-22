@@ -8,7 +8,7 @@ import { z } from "zod";
 // Validation schemas
 const updateFcmTokenSchema = z.object({
   fcmToken: z.string().min(1),
-  deviceType: z.enum(["ios", "android", "web"]).optional().default("web"),
+  deviceType: z.enum(["ios", "android"]).optional().default("ios"),
   deviceInfo: z.object({
     userAgent: z.string().optional(),
     platform: z.string().optional(),
@@ -477,11 +477,36 @@ export const updateFcmToken = async (req: AuthRequest, res: Response) => {
 
     const { fcmToken, deviceType, deviceInfo } = validation.data;
 
-    // Push Notification Service 임포트
-    const { saveFCMToken } = await import('../services/pushNotificationService');
-    
-    // 토큰 저장
-    await saveFCMToken(userId, fcmToken, deviceType || 'web', deviceInfo);
+    // 기존 토큰 확인
+    const { data: existing } = await supabase
+      .from('user_push_tokens')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('fcm_token', fcmToken)
+      .single();
+
+    if (existing) {
+      // 업데이트
+      await supabase
+        .from('user_push_tokens')
+        .update({
+          is_active: true,
+          device_info: deviceInfo,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id);
+    } else {
+      // 새로 추가
+      await supabase
+        .from('user_push_tokens')
+        .insert({
+          user_id: userId,
+          fcm_token: fcmToken,
+          device_type: deviceType || 'mobile',
+          device_info: deviceInfo,
+          is_active: true
+        });
+    }
 
     res.json({
       success: true,

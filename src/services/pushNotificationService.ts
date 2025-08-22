@@ -1,317 +1,352 @@
-import * as admin from 'firebase-admin';
+import { messaging } from '../config/firebase';
 import { supabase } from '../lib/supabase';
-import { logger } from '../config/logger';
+import { Message, MulticastMessage, Notification, AndroidConfig, ApnsConfig, WebpushConfig } from 'firebase-admin/messaging';
 
-// Firebase Admin SDK 초기화
-// 서비스 계정 키는 환경 변수나 파일로 관리
-const initializeFirebaseAdmin = () => {
-  if (!admin.apps.length) {
-    // 방법 1: 서비스 계정 JSON 파일 사용
-    // const serviceAccount = require('../../firebase-service-account.json');
-    // admin.initializeApp({
-    //   credential: admin.credential.cert(serviceAccount)
-    // });
-
-    // 방법 2: 환경 변수 사용
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      })
-    });
-  }
-};
-
-initializeFirebaseAdmin();
-
-// 푸시 알림 타입
-export interface PushNotificationPayload {
+interface NotificationPayload {
+  userId?: string;
   title: string;
   body: string;
-  icon?: string;
-  badge?: string;
-  image?: string;
   data?: Record<string, string>;
-  clickAction?: string;
+  imageUrl?: string;
+  priority?: 'urgent' | 'high' | 'normal' | 'low';
+  channel?: string;
+  type: string;
 }
 
-// 단일 사용자에게 푸시 알림 전송
-export const sendPushToUser = async (
-  userId: string,
-  payload: PushNotificationPayload
-): Promise<boolean> => {
-  try {
-    // 사용자의 FCM 토큰 조회
-    const { data: tokens, error } = await supabase
-      .from('user_push_tokens')
-      .select('fcm_token, device_type')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+interface SendToUserOptions {
+  saveToHistory?: boolean;
+}
 
-    if (error || !tokens || tokens.length === 0) {
-      logger.warn(`No active FCM tokens found for user ${userId}`);
-      return false;
+export class PushNotificationService {
+  // 사용자에게 푸시 알림 전송
+  async sendToUser(
+    userId: string, 
+    payload: NotificationPayload,
+    options: SendToUserOptions = { saveToHistory: true }
+  ) {
+    try {
+      // 1. 사용자의 활성 디바이스 토큰 조회
+      const { data: tokens, error: tokenError } = await supabase
+        .from('device_tokens')
+        .select('token, platform')
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      if (tokenError) {
+        console.error('디바이스 토큰 조회 실패:', tokenError);
+        throw tokenError;
+      }
+
+      if (!tokens || tokens.length === 0) {
+        console.log(`사용자 ${userId}의 활성 토큰이 없습니다.`);
+        return { success: false, message: '활성 디바이스 토큰이 없음' };
+      }
+
+      // 2. 사용자 알림 설정 확인
+      const { data: settings } = await supabase
+        .from('user_notification_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('channel', payload.channel || 'general')
+        .single();
+
+      if (settings && !settings.is_enabled) {
+        console.log(`사용자 ${userId}가 ${payload.channel} 채널 알림을 비활성화했습니다.`);
+        return { success: false, message: '사용자가 알림을 비활성화함' };
+      }
+
+      // 3. FCM 메시지 구성
+      const notification: Notification = {
+        title: payload.title,
+        body: payload.body,
+      };
+
+      if (payload.imageUrl) {
+        notification.imageUrl = payload.imageUrl;
+      }
+
+      const message: MulticastMessage = {
+        tokens: tokens.map(t => t.token),
+        notification,
+        data: {
+          ...payload.data,
+          type: payload.type,
+          channel: payload.channel || 'general',
+          timestamp: new Date().toISOString(),
+        },
+        android: this.getAndroidConfig(payload.priority),
+        apns: this.getApnsConfig(payload.priority),
+        webpush: this.getWebpushConfig(payload.priority),
+      };
+
+      // 4. FCM으로 전송
+      const response = await messaging.sendEachForMulticast(message);
+      
+      // 5. 실패한 토큰 처리
+      const failedTokens: string[] = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.error(`토큰 전송 실패: ${tokens[idx].token}`, resp.error);
+          failedTokens.push(tokens[idx].token);
+          
+          // 특정 에러 코드에 대해 토큰 비활성화
+          if (resp.error?.code === 'messaging/invalid-registration-token' ||
+              resp.error?.code === 'messaging/registration-token-not-registered') {
+            this.deactivateToken(tokens[idx].token);
+          }
+        }
+      });
+
+      // 6. 알림 히스토리 저장
+      if (options.saveToHistory) {
+        await this.saveNotificationHistory({
+          user_id: userId,
+          type: payload.type,
+          title: payload.title,
+          body: payload.body,
+          data: payload.data || {},
+          channel: payload.channel || 'general',
+          priority: payload.priority || 'normal',
+          status: response.successCount > 0 ? 'sent' : 'failed',
+          sent_at: new Date().toISOString(),
+        });
+      }
+
+      return {
+        success: response.successCount > 0,
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+        failedTokens,
+      };
+    } catch (error) {
+      console.error('푸시 알림 전송 실패:', error);
+      throw error;
     }
+  }
 
-    // 각 디바이스로 전송
-    const sendPromises = tokens.map(async (tokenData) => {
-      const message: admin.messaging.Message = {
-        token: tokenData.fcm_token,
+  // 여러 사용자에게 푸시 알림 전송
+  async sendToMultipleUsers(userIds: string[], payload: NotificationPayload) {
+    const results = await Promise.allSettled(
+      userIds.map(userId => this.sendToUser(userId, payload))
+    );
+
+    const summary = {
+      total: userIds.length,
+      successful: 0,
+      failed: 0,
+      errors: [] as any[],
+    };
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        summary.successful++;
+      } else {
+        summary.failed++;
+        if (result.status === 'rejected') {
+          summary.errors.push({
+            userId: userIds[index],
+            error: result.reason,
+          });
+        }
+      }
+    });
+
+    return summary;
+  }
+
+  // 토픽 기반 알림 전송 (대량 발송용)
+  async sendToTopic(topic: string, payload: NotificationPayload) {
+    try {
+      const message: Message = {
+        topic,
         notification: {
           title: payload.title,
           body: payload.body,
-          imageUrl: payload.image
+          imageUrl: payload.imageUrl,
         },
         data: {
           ...payload.data,
-          click_action: payload.clickAction || '/',
-          timestamp: new Date().toISOString()
+          type: payload.type,
+          channel: payload.channel || 'general',
+          timestamp: new Date().toISOString(),
         },
-        webpush: {
-          notification: {
-            icon: payload.icon || '/pwa-192x192.png',
-            badge: payload.badge || '/pwa-192x192.png',
-            vibrate: [200, 100, 200],
-            requireInteraction: true,
-            tag: payload.data?.tag || 'wehand-notification'
-          },
-          fcmOptions: {
-            link: payload.clickAction || '/'
-          }
-        },
-        android: {
-          notification: {
-            icon: 'ic_notification',
-            color: '#059669',
-            priority: 'high' as const,
-            channelId: 'wehand_notifications'
-          }
-        },
-        apns: {
-          payload: {
-            aps: {
-              badge: 1,
-              sound: 'default',
-              contentAvailable: true
-            }
-          }
-        }
+        android: this.getAndroidConfig(payload.priority),
+        apns: this.getApnsConfig(payload.priority),
+        webpush: this.getWebpushConfig(payload.priority),
       };
 
-      try {
-        const response = await admin.messaging().send(message);
-        logger.info(`Push notification sent successfully: ${response}`);
-        return true;
-      } catch (error: any) {
-        logger.error(`Failed to send push notification: ${error.message}`);
-        
-        // 토큰이 유효하지 않으면 비활성화
-        if (error.code === 'messaging/invalid-registration-token' || 
-            error.code === 'messaging/registration-token-not-registered') {
-          await supabase
-            .from('user_push_tokens')
-            .update({ is_active: false })
-            .eq('fcm_token', tokenData.fcm_token);
-        }
-        
-        return false;
-      }
-    });
-
-    const results = await Promise.all(sendPromises);
-    return results.some(result => result === true);
-  } catch (error: any) {
-    logger.error(`Error sending push notification: ${error.message}`);
-    return false;
+      const response = await messaging.send(message);
+      
+      // 캠페인 히스토리 저장
+      await this.saveCampaignResult(topic, payload, response);
+      
+      return { success: true, messageId: response };
+    } catch (error) {
+      console.error('토픽 알림 전송 실패:', error);
+      throw error;
+    }
   }
-};
 
-// 여러 사용자에게 푸시 알림 전송
-export const sendPushToMultipleUsers = async (
-  userIds: string[],
-  payload: PushNotificationPayload
-): Promise<void> => {
-  const sendPromises = userIds.map(userId => sendPushToUser(userId, payload));
-  await Promise.allSettled(sendPromises);
-};
-
-// 토픽 기반 푸시 알림 전송
-export const sendPushToTopic = async (
-  topic: string,
-  payload: PushNotificationPayload
-): Promise<void> => {
-  try {
-    const message: admin.messaging.Message = {
-      topic,
-      notification: {
-        title: payload.title,
-        body: payload.body,
-        imageUrl: payload.image
-      },
-      data: payload.data || {},
-      webpush: {
+  // 조건 기반 알림 전송
+  async sendWithCondition(condition: string, payload: NotificationPayload) {
+    try {
+      const message: Message = {
+        condition, // 예: "'stock-news' in topics || 'tech-news' in topics"
         notification: {
-          icon: payload.icon || '/pwa-192x192.png',
-          badge: payload.badge || '/pwa-192x192.png'
-        }
-      }
-    };
+          title: payload.title,
+          body: payload.body,
+          imageUrl: payload.imageUrl,
+        },
+        data: {
+          ...payload.data,
+          type: payload.type,
+          channel: payload.channel || 'general',
+          timestamp: new Date().toISOString(),
+        },
+      };
 
-    const response = await admin.messaging().send(message);
-    logger.info(`Topic push notification sent: ${response}`);
-  } catch (error: any) {
-    logger.error(`Failed to send topic push: ${error.message}`);
-  }
-};
-
-// 채팅 메시지 알림
-export const sendChatNotification = async (
-  recipientId: string,
-  senderName: string,
-  message: string,
-  chatRoomId: string
-): Promise<void> => {
-  await sendPushToUser(recipientId, {
-    title: `${senderName}님의 메시지`,
-    body: message,
-    data: {
-      type: 'chat',
-      chatRoomId,
-      tag: `chat-${chatRoomId}`
-    },
-    clickAction: `/chat/${chatRoomId}`
-  });
-};
-
-// 매치 참가 승인 알림
-export const sendMatchApprovalNotification = async (
-  userId: string,
-  matchTitle: string,
-  matchId: string
-): Promise<void> => {
-  await sendPushToUser(userId, {
-    title: '매치 참가 승인',
-    body: `"${matchTitle}" 매치 참가가 승인되었습니다!`,
-    data: {
-      type: 'match',
-      matchId,
-      tag: `match-${matchId}`
-    },
-    clickAction: `/matching/${matchId}`
-  });
-};
-
-// 매치 시작 알림
-export const sendMatchStartNotification = async (
-  participants: string[],
-  matchTitle: string,
-  matchId: string,
-  startTime: string
-): Promise<void> => {
-  await sendPushToMultipleUsers(participants, {
-    title: '매치 시작 알림',
-    body: `"${matchTitle}" 매치가 ${startTime}에 시작됩니다!`,
-    data: {
-      type: 'match',
-      matchId,
-      tag: `match-start-${matchId}`
-    },
-    clickAction: `/matching/${matchId}`
-  });
-};
-
-// 커뮤니티 알림 (댓글, 좋아요)
-export const sendCommunityNotification = async (
-  userId: string,
-  type: 'comment' | 'like',
-  actorName: string,
-  postTitle: string,
-  postId: string
-): Promise<void> => {
-  const notifications = {
-    comment: {
-      title: '새 댓글',
-      body: `${actorName}님이 "${postTitle}" 게시글에 댓글을 남겼습니다.`
-    },
-    like: {
-      title: '좋아요',
-      body: `${actorName}님이 "${postTitle}" 게시글을 좋아합니다.`
+      const response = await messaging.send(message);
+      return { success: true, messageId: response };
+    } catch (error) {
+      console.error('조건 기반 알림 전송 실패:', error);
+      throw error;
     }
-  };
+  }
 
-  await sendPushToUser(userId, {
-    ...notifications[type],
-    data: {
-      type: 'community',
-      postId,
-      tag: `community-${postId}`
-    },
-    clickAction: `/board/${postId}`
-  });
-};
-
-// FCM 토큰 저장/업데이트
-export const saveFCMToken = async (
-  userId: string,
-  token: string,
-  deviceType: string = 'web',
-  deviceInfo?: any
-): Promise<void> => {
-  try {
-    // 기존 토큰 확인
-    const { data: existing } = await supabase
-      .from('user_push_tokens')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('fcm_token', token)
-      .single();
-
-    if (existing) {
-      // 업데이트
-      await supabase
-        .from('user_push_tokens')
-        .update({
-          is_active: true,
-          device_info: deviceInfo,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id);
-    } else {
-      // 새로 추가
-      await supabase
-        .from('user_push_tokens')
-        .insert({
+  // 디바이스 토큰 등록
+  async registerDeviceToken(userId: string, token: string, platform: 'ios' | 'android' | 'web', deviceInfo?: any) {
+    try {
+      const { data, error } = await supabase
+        .from('device_tokens')
+        .upsert({
           user_id: userId,
-          fcm_token: token,
-          device_type: deviceType,
-          device_info: deviceInfo,
-          is_active: true
+          token,
+          platform,
+          device_info: deviceInfo || {},
+          is_active: true,
+          last_used_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,token',
         });
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('디바이스 토큰 등록 실패:', error);
+      throw error;
     }
-
-    logger.info(`FCM token saved for user ${userId}`);
-  } catch (error: any) {
-    logger.error(`Failed to save FCM token: ${error.message}`);
-    throw error;
   }
-};
 
-// FCM 토큰 삭제/비활성화
-export const removeFCMToken = async (
-  userId: string,
-  token: string
-): Promise<void> => {
-  try {
-    await supabase
-      .from('user_push_tokens')
-      .update({ is_active: false })
-      .eq('user_id', userId)
-      .eq('fcm_token', token);
+  // 디바이스 토큰 비활성화
+  async deactivateToken(token: string) {
+    try {
+      const { error } = await supabase
+        .from('device_tokens')
+        .update({ is_active: false })
+        .eq('token', token);
 
-    logger.info(`FCM token removed for user ${userId}`);
-  } catch (error: any) {
-    logger.error(`Failed to remove FCM token: ${error.message}`);
-    throw error;
+      if (error) throw error;
+    } catch (error) {
+      console.error('토큰 비활성화 실패:', error);
+    }
   }
-};
+
+  // 알림 히스토리 저장
+  private async saveNotificationHistory(data: any) {
+    try {
+      const { error } = await supabase
+        .from('notification_history')
+        .insert(data);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('알림 히스토리 저장 실패:', error);
+    }
+  }
+
+  // 캠페인 결과 저장
+  private async saveCampaignResult(topic: string, payload: NotificationPayload, messageId: string) {
+    try {
+      // 캠페인 테이블 업데이트 로직
+      console.log(`캠페인 결과 저장: ${topic}, 메시지 ID: ${messageId}`);
+    } catch (error) {
+      console.error('캠페인 결과 저장 실패:', error);
+    }
+  }
+
+  // Android 설정
+  private getAndroidConfig(priority?: string): AndroidConfig {
+    return {
+      priority: priority === 'urgent' || priority === 'high' ? 'high' : 'normal',
+      notification: {
+        sound: 'default',
+        clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+        channelId: 'default',
+      },
+    };
+  }
+
+  // iOS 설정
+  private getApnsConfig(priority?: string): ApnsConfig {
+    return {
+      payload: {
+        aps: {
+          sound: 'default',
+          badge: 1,
+          contentAvailable: true,
+        },
+      },
+      headers: {
+        'apns-priority': priority === 'urgent' || priority === 'high' ? '10' : '5',
+      },
+    };
+  }
+
+  // Web Push 설정
+  private getWebpushConfig(priority?: string): WebpushConfig {
+    return {
+      headers: {
+        Urgency: priority || 'normal',
+        TTL: '86400', // 24시간
+      },
+      notification: {
+        icon: '/pwa-192x192.png',
+        badge: '/pwa-192x192.png',
+        vibrate: [200, 100, 200],
+      },
+    };
+  }
+
+  // 토픽 구독
+  async subscribeToTopic(tokens: string[], topic: string) {
+    try {
+      const response = await messaging.subscribeToTopic(tokens, topic);
+      return {
+        success: response.successCount > 0,
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+      };
+    } catch (error) {
+      console.error('토픽 구독 실패:', error);
+      throw error;
+    }
+  }
+
+  // 토픽 구독 해제
+  async unsubscribeFromTopic(tokens: string[], topic: string) {
+    try {
+      const response = await messaging.unsubscribeFromTopic(tokens, topic);
+      return {
+        success: response.successCount > 0,
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+      };
+    } catch (error) {
+      console.error('토픽 구독 해제 실패:', error);
+      throw error;
+    }
+  }
+}
+
+// 싱글톤 인스턴스
+export const pushNotificationService = new PushNotificationService();

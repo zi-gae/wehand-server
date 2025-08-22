@@ -39,7 +39,7 @@ export const userUpdateSchema = z.object({
   experience_years: z
     .number()
     .min(0)
-    .max(50, "경력은 0-50년 사이여야 합니다")
+    .max(50, "구력은 0-50년 사이여야 합니다")
     .optional(),
   favorite_style: z
     .string()
@@ -121,7 +121,7 @@ export const matchCreateSchema = z
       return data.recruit_experience_min <= data.recruit_experience_max;
     }
     return true;
-  }, "경력 최소값은 최대값보다 작거나 같아야 합니다");
+  }, "구력 최소값은 최대값보다 작거나 같아야 합니다");
 
 export const matchJoinSchema = z.object({
   message: z

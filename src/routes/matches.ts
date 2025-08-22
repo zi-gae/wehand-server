@@ -52,13 +52,13 @@ const router = Router();
  *         schema:
  *           type: integer
  *           minimum: 0
- *         description: 최소 경력 (년)
+ *         description: 최소 구력 (년)
  *       - in: query
  *         name: experience_max
  *         schema:
  *           type: integer
  *           minimum: 0
- *         description: 최대 경력 (년)
+ *         description: 최대 구력 (년)
  *       - in: query
  *         name: sort
  *         schema:
@@ -524,6 +524,10 @@ router.post("/:matchId/chat", requireAuth, matchController.createMatchChat);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/:matchId/chat/private", requireAuth, matchController.createPrivateChat);
+router.post(
+  "/:matchId/chat/private",
+  requireAuth,
+  matchController.createPrivateChat
+);
 
 export default router;

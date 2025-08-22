@@ -121,7 +121,7 @@ export const matchController = {
       if (ntrp_max) query = query.lte("recruit_ntrp_min", ntrp_max);
     }
 
-    // 경력 필터
+    // 구력 필터
     if (experience_min || experience_max) {
       if (experience_min)
         query = query.gte("recruit_experience_max", experience_min);

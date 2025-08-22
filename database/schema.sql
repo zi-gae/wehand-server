@@ -21,7 +21,7 @@ CREATE TABLE users (
     
     -- Tennis specific info
     ntrp DECIMAL(2,1), -- NTRP rating (1.0 - 7.0)
-    experience_years INTEGER, -- 경력 (년)
+    experience_years INTEGER, -- 구력 (년)
     favorite_style TEXT, -- 플레이 스타일 (공격적 베이스라인)
     
     -- Statistics
