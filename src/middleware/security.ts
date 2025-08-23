@@ -118,15 +118,6 @@ export const requestLogger = (
     console.log(
       `${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`
     );
-
-    // Capacitor 요청에 대한 추가 로깅
-    console.log("Capacitor 응답 헤더:", {
-      "Access-Control-Allow-Origin": res.get("Access-Control-Allow-Origin"),
-      "Access-Control-Allow-Credentials": res.get(
-        "Access-Control-Allow-Credentials"
-      ),
-      "Content-Security-Policy": res.get("Content-Security-Policy"),
-    });
   });
 
   next();

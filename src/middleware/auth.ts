@@ -36,20 +36,9 @@ export const requireAuth = async (
 
     const cookies = parseCookies(req.headers.cookie);
 
-    // 쿠키 로그 추가
-    console.log("🍪 쿠키 및 쿼리 확인:", {
-      rawCookies: req.headers.cookie,
-      parsedCookies: cookies,
-      sbAccessToken: cookies["sb-access-token"] ? "있음" : "없음",
-      sbRefreshToken: cookies["sb-refresh-token"] ? "있음" : "없음",
-      queryToken: req.query.token ? "있음" : "없음",
-      origin: req.headers.origin,
-      authorization: req.headers.authorization ? "있음" : "없음",
-    });
-
     // 토큰 우선순위: Authorization 헤더 > 쿼리스트링 > 쿠키
     let authToken = "";
-    
+
     // 1. Authorization 헤더 확인
     if (req.headers.authorization?.startsWith("Bearer ")) {
       authToken = req.headers.authorization.substring(7);
@@ -72,8 +61,6 @@ export const requireAuth = async (
       console.log("❌ 토큰이 없음 - 헤더, 쿼리, 쿠키 모두 확인함");
       throw new ApiError(401, "인증 토큰이 필요합니다", "MISSING_TOKEN");
     }
-
-    console.log("✅ 토큰 발견, 길이:", authToken.length);
 
     const {
       data: { user },
@@ -147,7 +134,7 @@ export const optionalAuth = async (
 
     // 토큰 우선순위: Authorization 헤더 > 쿼리스트링 > 쿠키
     let authToken = "";
-    
+
     // 1. Authorization 헤더 확인
     if (req.headers.authorization?.startsWith("Bearer ")) {
       authToken = req.headers.authorization.substring(7);
