@@ -824,7 +824,189 @@ POST /auth/logout
 
 ---
 
-## 13. 상태 코드
+## 13. 사용자 차단 API
+
+### 13.1 사용자 차단
+
+```
+POST /blocks/users/{userId}
+```
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Request Body:**
+```json
+{
+  "reason": "harassment",
+  "reasonDetail": "반복적인 욕설 및 괴롭힘"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "김테니스님을 차단했습니다",
+    "blockId": "uuid"
+  }
+}
+```
+
+### 13.2 사용자 차단 해제
+
+```
+DELETE /blocks/users/{userId}
+```
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "김테니스님의 차단을 해제했습니다"
+  }
+}
+```
+
+### 13.3 차단한 사용자 목록 조회
+
+```
+GET /blocks/users?page={page}&limit={limit}
+```
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Parameters:**
+- page: 페이지 번호 (기본값: 1)
+- limit: 페이지당 항목 수 (기본값: 20)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "blockedUsers": [
+      {
+        "id": "uuid",
+        "blocker_id": "uuid",
+        "blocked_id": "uuid",
+        "reason": "harassment",
+        "reason_detail": "반복적인 욕설 및 괴롭힘",
+        "created_at": "2024-01-15T09:00:00Z",
+        "blocked_user_name": "김테니스",
+        "blocked_user_nickname": "tennis_king",
+        "blocked_user_profile_image": "https://example.com/image.jpg"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+### 13.4 차단 상태 확인
+
+```
+GET /blocks/status/{userId}
+```
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "isBlocked": true,
+    "iBlockedThem": true,
+    "theyBlockedMe": false,
+    "myBlock": {
+      "id": "uuid",
+      "reason": "harassment",
+      "blockedAt": "2024-01-15T09:00:00Z"
+    },
+    "theirBlock": null
+  }
+}
+```
+
+### 13.5 차단 사유 목록 조회
+
+```
+GET /blocks/reasons
+```
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "reasons": [
+      {
+        "code": "spam",
+        "label": "스팸/광고"
+      },
+      {
+        "code": "harassment",
+        "label": "괴롭힘/욕설"
+      },
+      {
+        "code": "inappropriate_behavior",
+        "label": "부적절한 행동"
+      },
+      {
+        "code": "fake_profile",
+        "label": "가짜 프로필"
+      },
+      {
+        "code": "no_show",
+        "label": "노쇼/약속 불이행"
+      },
+      {
+        "code": "other",
+        "label": "기타"
+      }
+    ]
+  }
+}
+```
+
+### 13.6 차단 기능 동작 원리
+
+- **매치 목록**: 차단된 사용자가 호스트인 매치는 목록에서 제외됩니다
+- **매치 참가**: 차단된 사용자의 매치에는 참가할 수 없습니다
+- **게시글**: 차단된 사용자의 게시글과 댓글은 보이지 않습니다
+- **채팅**: 차단된 사용자와는 채팅을 할 수 없습니다
+- **알림**: 차단된 사용자로부터의 알림은 차단됩니다
+- **프로필**: 차단된 사용자의 프로필은 볼 수 없습니다
+
+---
+
+## 14. 상태 코드
 
 - `200` - 성공
 - `201` - 생성 성공
@@ -836,7 +1018,7 @@ POST /auth/logout
 
 ---
 
-## 14. 실시간 기능
+## 15. 실시간 기능
 
 ### WebSocket 연결
 

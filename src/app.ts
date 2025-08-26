@@ -37,7 +37,7 @@ import { authenticateSocket } from "./middleware/auth";
 dotenv.config();
 
 // Firebase Admin SDK 초기화
-import './config/firebase';
+// import './config/firebase';
 
 const app = express();
 const server = createServer(app);

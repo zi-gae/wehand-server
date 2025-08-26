@@ -1,6 +1,6 @@
-import * as admin from 'firebase-admin';
-import * as dotenv from 'dotenv';
-import path from 'path';
+import * as admin from "firebase-admin";
+import * as dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
@@ -9,18 +9,22 @@ const initializeFirebase = () => {
   try {
     // 서비스 계정 키 파일 경로 (환경변수 또는 파일 경로)
     const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-    
+
     if (serviceAccountPath) {
       // 서비스 계정 키 파일 사용
       const serviceAccount = require(path.resolve(serviceAccountPath));
-      
+
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
     } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       // 환경변수에서 직접 서비스 계정 키 읽기 (프로덕션용)
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-      
+      const serviceAccount = JSON.parse(
+        process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+      );
+
+      console.log("@@@serviceAccount", serviceAccount);
+
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
@@ -31,9 +35,9 @@ const initializeFirebase = () => {
       });
     }
 
-    console.log('Firebase Admin SDK 초기화 성공');
+    console.log("Firebase Admin SDK 초기화 성공");
   } catch (error) {
-    console.error('Firebase Admin SDK 초기화 실패:', error);
+    console.error("Firebase Admin SDK 초기화 실패:", error);
     // Firebase가 초기화되지 않아도 서버는 계속 실행되도록 함
   }
 };

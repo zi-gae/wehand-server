@@ -35,6 +35,25 @@ const swaggerDefinition = {
         description: "Supabase JWT 토큰을 입력하세요",
       },
     },
+    responses: {
+      Unauthorized: {
+        description: "인증 실패 - 토큰이 없거나 유효하지 않음",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse",
+            },
+            example: {
+              success: false,
+              error: {
+                code: "UNAUTHORIZED",
+                message: "인증이 필요합니다",
+              },
+            },
+          },
+        },
+      },
+    },
     schemas: {
       // =============================================
       // 공통 응답 스키마
@@ -1638,6 +1657,192 @@ const swaggerDefinition = {
       },
 
       // =============================================
+      // 사용자 차단 관련 스키마
+      // =============================================
+      BlockedUser: {
+        type: "object",
+        required: ["id", "blocked_id", "created_at"],
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid",
+            description: "차단 기록 ID",
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          },
+          blocker_id: {
+            type: "string",
+            format: "uuid", 
+            description: "차단한 사용자 ID",
+            example: "550e8400-e29b-41d4-a716-446655440001"
+          },
+          blocked_id: {
+            type: "string",
+            format: "uuid",
+            description: "차단당한 사용자 ID", 
+            example: "550e8400-e29b-41d4-a716-446655440002"
+          },
+          reason: {
+            type: "string",
+            enum: ["spam", "harassment", "inappropriate_behavior", "fake_profile", "no_show", "other"],
+            description: "차단 사유 코드",
+            example: "harassment"
+          },
+          reason_detail: {
+            type: "string",
+            description: "상세 차단 사유",
+            example: "반복적인 욕설 및 괴롭힘",
+            maxLength: 500
+          },
+          created_at: {
+            type: "string",
+            format: "date-time",
+            description: "차단 생성일시"
+          },
+          blocked_user_name: {
+            type: "string",
+            description: "차단된 사용자 이름",
+            example: "김테니스"
+          },
+          blocked_user_nickname: {
+            type: "string",
+            description: "차단된 사용자 닉네임",
+            example: "tennis_king"
+          },
+          blocked_user_profile_image: {
+            type: "string",
+            format: "uri",
+            description: "차단된 사용자 프로필 이미지 URL",
+            example: "https://example.com/profile.jpg"
+          }
+        }
+      },
+
+      BlockUserRequest: {
+        type: "object",
+        properties: {
+          reason: {
+            type: "string",
+            enum: ["spam", "harassment", "inappropriate_behavior", "fake_profile", "no_show", "other"],
+            description: "차단 사유 코드 (선택)",
+            example: "harassment"
+          },
+          reasonDetail: {
+            type: "string",
+            description: "상세 차단 사유 (선택)",
+            example: "반복적인 욕설 및 괴롭힘",
+            maxLength: 500
+          }
+        }
+      },
+
+      BlockStatusResponse: {
+        type: "object",
+        required: ["isBlocked", "iBlockedThem", "theyBlockedMe"],
+        properties: {
+          isBlocked: {
+            type: "boolean",
+            description: "양방향 차단 여부 (둘 중 하나라도 차단한 경우)",
+            example: true
+          },
+          iBlockedThem: {
+            type: "boolean", 
+            description: "내가 상대방을 차단했는지 여부",
+            example: true
+          },
+          theyBlockedMe: {
+            type: "boolean",
+            description: "상대방이 나를 차단했는지 여부", 
+            example: false
+          },
+          myBlock: {
+            oneOf: [
+              { type: "null" },
+              {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "string",
+                    format: "uuid",
+                    description: "차단 기록 ID"
+                  },
+                  reason: {
+                    type: "string",
+                    description: "차단 사유"
+                  },
+                  blockedAt: {
+                    type: "string",
+                    format: "date-time",
+                    description: "차단 일시"
+                  }
+                }
+              }
+            ],
+            description: "내가 차단한 정보 (차단하지 않은 경우 null)"
+          },
+          theirBlock: {
+            oneOf: [
+              { type: "null" },
+              {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "string",
+                    format: "uuid",
+                    description: "차단 기록 ID"
+                  },
+                  reason: {
+                    type: "string", 
+                    description: "차단 사유"
+                  },
+                  blockedAt: {
+                    type: "string",
+                    format: "date-time",
+                    description: "차단 일시"
+                  }
+                }
+              }
+            ],
+            description: "상대방이 차단한 정보 (차단하지 않은 경우 null)"
+          }
+        }
+      },
+
+      BlockReason: {
+        type: "object",
+        required: ["code", "label"],
+        properties: {
+          code: {
+            type: "string",
+            enum: ["spam", "harassment", "inappropriate_behavior", "fake_profile", "no_show", "other"],
+            description: "차단 사유 코드",
+            example: "harassment"
+          },
+          label: {
+            type: "string",
+            description: "차단 사유 표시 텍스트",
+            example: "괴롭힘/욕설"
+          }
+        }
+      },
+
+      BlockedUsersResponse: {
+        type: "object",
+        required: ["blockedUsers", "pagination"],
+        properties: {
+          blockedUsers: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/BlockedUser"
+            },
+            description: "차단한 사용자 목록"
+          },
+          pagination: {
+            $ref: "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+
+      // =============================================
       // 채팅 관련 스키마
       // =============================================
       ChatRoom: {
@@ -1972,6 +2177,10 @@ const swaggerDefinition = {
     {
       name: "Review",
       description: "리뷰 API - 매치 리뷰 작성 및 조회",
+    },
+    {
+      name: "Blocks",
+      description: "차단 API - 사용자 차단 및 차단 관리",
     },
   ],
 };
