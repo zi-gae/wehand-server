@@ -1755,53 +1755,45 @@ const swaggerDefinition = {
             example: false
           },
           myBlock: {
-            oneOf: [
-              { type: "null" },
-              {
-                type: "object",
-                properties: {
-                  id: {
-                    type: "string",
-                    format: "uuid",
-                    description: "차단 기록 ID"
-                  },
-                  reason: {
-                    type: "string",
-                    description: "차단 사유"
-                  },
-                  blockedAt: {
-                    type: "string",
-                    format: "date-time",
-                    description: "차단 일시"
-                  }
-                }
+            type: "object",
+            nullable: true,
+            properties: {
+              id: {
+                type: "string",
+                format: "uuid",
+                description: "차단 기록 ID"
+              },
+              reason: {
+                type: "string",
+                description: "차단 사유"
+              },
+              blockedAt: {
+                type: "string",
+                format: "date-time",
+                description: "차단 일시"
               }
-            ],
+            },
             description: "내가 차단한 정보 (차단하지 않은 경우 null)"
           },
           theirBlock: {
-            oneOf: [
-              { type: "null" },
-              {
-                type: "object",
-                properties: {
-                  id: {
-                    type: "string",
-                    format: "uuid",
-                    description: "차단 기록 ID"
-                  },
-                  reason: {
-                    type: "string", 
-                    description: "차단 사유"
-                  },
-                  blockedAt: {
-                    type: "string",
-                    format: "date-time",
-                    description: "차단 일시"
-                  }
-                }
+            type: "object",
+            nullable: true,
+            properties: {
+              id: {
+                type: "string",
+                format: "uuid",
+                description: "차단 기록 ID"
+              },
+              reason: {
+                type: "string", 
+                description: "차단 사유"
+              },
+              blockedAt: {
+                type: "string",
+                format: "date-time",
+                description: "차단 일시"
               }
-            ],
+            },
             description: "상대방이 차단한 정보 (차단하지 않은 경우 null)"
           }
         }

@@ -942,10 +942,5 @@ function formatNtrpLevel(minNtrp?: number, maxNtrp?: number): string {
   if (!minNtrp) return `~${maxNtrp}`;
   if (!maxNtrp) return `${minNtrp}~`;
 
-  const avgNtrp = (minNtrp + maxNtrp) / 2;
-  if (avgNtrp <= 2.5) return "초급";
-  if (avgNtrp <= 3.5) return "초중급";
-  if (avgNtrp <= 4.5) return "중급";
-  if (avgNtrp <= 5.5) return "중상급";
-  return "상급";
+  return `${minNtrp}~${maxNtrp}`;
 }
