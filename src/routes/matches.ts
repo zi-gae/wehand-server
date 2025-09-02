@@ -530,4 +530,92 @@ router.post(
   matchController.createPrivateChat
 );
 
+/**
+ * @swagger
+ * /api/matches/{matchId}:
+ *   delete:
+ *     summary: 매치 삭제
+ *     tags: [Matches]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: matchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 삭제할 매치 ID
+ *     responses:
+ *       200:
+ *         description: 매치 삭제 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "매치가 삭제되었습니다"
+ *       400:
+ *         description: 삭제 불가한 매치 상태 또는 참가자 존재
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               active_match:
+ *                 summary: 진행 중인 매치
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: "CANNOT_DELETE_ACTIVE_MATCH"
+ *                     message: "진행 중이거나 완료된 매치는 삭제할 수 없습니다"
+ *               has_participants:
+ *                 summary: 참가자가 있는 매치
+ *                 value:
+ *                   success: false
+ *                   error:
+ *                     code: "CANNOT_DELETE_MATCH_WITH_PARTICIPANTS"
+ *                     message: "참가자가 있는 매치는 삭제할 수 없습니다. 먼저 매치를 취소해주세요"
+ *       401:
+ *         description: 인증 필요
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: 삭제 권한 없음 (호스트가 아님)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: "INSUFFICIENT_PERMISSION"
+ *                 message: "매치 삭제 권한이 없습니다"
+ *       404:
+ *         description: 매치를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: 서버 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: "MATCH_DELETION_ERROR"
+ *                 message: "매치 삭제 중 오류가 발생했습니다"
+ */
+router.delete("/:matchId", requireAuth, matchController.deleteMatch);
+
 export default router;
