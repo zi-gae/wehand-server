@@ -20,7 +20,24 @@ const router = Router();
  *         name: region
  *         schema:
  *           type: string
- *         description: 지역 필터
+ *         description: 단일 지역 필터 (하위 호환성)
+ *       - in: query
+ *         name: regions
+ *         schema:
+ *           oneOf:
+ *             - type: string
+ *               description: 콤마로 구분된 지역 리스트
+ *               example: "서울 강남구,서울 서초구,경기도 성남시"
+ *             - type: array
+ *               items:
+ *                 type: string
+ *               description: 지역 배열
+ *         description: 여러 지역 필터 (OR 조건으로 검색)
+ *         examples:
+ *           string:
+ *             value: "서울 강남구,서울 서초구"
+ *           array:
+ *             value: ["서울 강남구", "서울 서초구"]
  *       - in: query
  *         name: game_type
  *         schema:
@@ -32,7 +49,21 @@ const router = Router();
  *         schema:
  *           type: string
  *           format: date
- *         description: 날짜 (YYYY-MM-DD)
+ *         description: 특정 날짜 (YYYY-MM-DD, 하위 호환성)
+ *       - in: query
+ *         name: date_start
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: 시작 날짜 (YYYY-MM-DD, 날짜 범위 검색)
+ *         example: "2024-01-01"
+ *       - in: query
+ *         name: date_end
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: 종료 날짜 (YYYY-MM-DD, 날짜 범위 검색)
+ *         example: "2024-01-31"
  *       - in: query
  *         name: ntrp_min
  *         schema:

@@ -25,8 +25,11 @@ export const matchController = {
       limit,
       search,
       region,
+      regions,
       game_type,
       date,
+      date_start,
+      date_end,
       ntrp_min,
       ntrp_max,
       experience_min,
@@ -58,8 +61,8 @@ export const matchController = {
         .in("status", ["recruiting", "full", "confirmed"]);
     } else {
       // 기본 matches 테이블 조회 (host_id 포함)
-      if (region) {
-        // region 필터가 있을 때는 venues를 inner join하고 필터 조건 추가
+      if (region || regions) {
+        // region 또는 regions 필터가 있을 때는 venues를 inner join하고 필터 조건 추가
         query = supabase
           .from("matches")
           .select(
@@ -74,8 +77,17 @@ export const matchController = {
         `,
             { count: "exact" }
           )
-          .in("status", ["recruiting", "full", "confirmed"])
-          .ilike("venues.region", `%${region}%`);
+          .in("status", ["recruiting", "full", "confirmed"]);
+        
+        // 지역 리스트로 필터링
+        if (regions && regions.length > 0) {
+          // OR 조건으로 여러 지역 검색
+          const regionFilters = regions.map(r => `venues.region.ilike.%${r}%`).join(',');
+          query = query.or(regionFilters);
+        } else if (region) {
+          // 단일 지역 필터 (하위 호환성)
+          query = query.ilike("venues.region", `%${region}%`);
+        }
       } else {
         query = supabase
           .from("matches")
@@ -108,7 +120,17 @@ export const matchController = {
     }
 
     // 날짜 필터
-    if (date) {
+    if (date_start && date_end) {
+      // 날짜 범위로 필터링
+      query = query.gte("match_date", date_start).lte("match_date", date_end);
+    } else if (date_start) {
+      // 시작 날짜만 있는 경우
+      query = query.gte("match_date", date_start);
+    } else if (date_end) {
+      // 종료 날짜만 있는 경우
+      query = query.lte("match_date", date_end);
+    } else if (date) {
+      // 특정 날짜만 필터링 (하위 호환성)
       query = query.eq("match_date", date);
     } else {
       // 기본적으로 오늘 이후 매치만
@@ -352,7 +374,10 @@ export const matchController = {
       participants: `${current_participants}/${maxParticipantsExcludingHost}`,
       gameType: formatGameType(match.game_type),
       level: formatNtrpLevel(match.recruit_ntrp_min, match.recruit_ntrp_max),
-      experience: formatExperienceLevel(match.recruit_experience_min, match.recruit_experience_max),
+      experience: formatExperienceLevel(
+        match.recruit_experience_min,
+        match.recruit_experience_max
+      ),
       price: match.price ? formatPrice(match.price) : "무료",
       status: match.status,
       hostName: host?.name || "",
@@ -1052,7 +1077,10 @@ function formatNtrpLevel(minNtrp?: number, maxNtrp?: number): string {
   return `${minNtrp}~${maxNtrp}`;
 }
 
-function formatExperienceLevel(minExperience?: number, maxExperience?: number): string {
+function formatExperienceLevel(
+  minExperience?: number,
+  maxExperience?: number
+): string {
   if (!minExperience && !maxExperience) return "모든 구력";
   if (minExperience === maxExperience) return `${minExperience}년`;
   if (!minExperience) return `~${maxExperience}년`;

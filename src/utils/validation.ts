@@ -133,12 +133,26 @@ export const matchJoinSchema = z.object({
 export const matchFilterSchema = z.object({
   search: z.string().max(100, "검색어는 100자 이하여야 합니다").optional(),
   region: z.string().max(100, "지역은 100자 이하여야 합니다").optional(),
+  regions: z
+    .union([
+      z.string().transform((val) => val.split(",")),
+      z.array(z.string()),
+    ])
+    .optional(),
   game_type: z
     .enum(["singles", "mens_doubles", "womens_doubles", "mixed_doubles"])
     .optional(),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식이 올바르지 않습니다")
+    .optional(),
+  date_start: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "시작 날짜 형식이 올바르지 않습니다")
+    .optional(),
+  date_end: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "종료 날짜 형식이 올바르지 않습니다")
     .optional(),
   ntrp_min: z
     .string()
