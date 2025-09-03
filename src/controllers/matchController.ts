@@ -250,6 +250,10 @@ export const matchController = {
             match.recruit_ntrp_min,
             match.recruit_ntrp_max
           ),
+          experience: formatExperienceLevel(
+            match.recruit_experience_min,
+            match.recruit_experience_max
+          ),
           price: match.price ? formatPrice(match.price) : "무료",
           status: match.status,
           hostName:
@@ -348,6 +352,7 @@ export const matchController = {
       participants: `${current_participants}/${maxParticipantsExcludingHost}`,
       gameType: formatGameType(match.game_type),
       level: formatNtrpLevel(match.recruit_ntrp_min, match.recruit_ntrp_max),
+      experience: formatExperienceLevel(match.recruit_experience_min, match.recruit_experience_max),
       price: match.price ? formatPrice(match.price) : "무료",
       status: match.status,
       hostName: host?.name || "",
@@ -1045,4 +1050,13 @@ function formatNtrpLevel(minNtrp?: number, maxNtrp?: number): string {
   if (!maxNtrp) return `${minNtrp}~`;
 
   return `${minNtrp}~${maxNtrp}`;
+}
+
+function formatExperienceLevel(minExperience?: number, maxExperience?: number): string {
+  if (!minExperience && !maxExperience) return "모든 구력";
+  if (minExperience === maxExperience) return `${minExperience}년`;
+  if (!minExperience) return `~${maxExperience}년`;
+  if (!maxExperience) return `${minExperience}년~`;
+
+  return `${minExperience}~${maxExperience}년`;
 }

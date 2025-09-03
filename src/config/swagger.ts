@@ -390,6 +390,11 @@ const swaggerDefinition = {
             example: "중급",
             description: "레벨 (초급/초중급/중급/중상급/상급)",
           },
+          experience: {
+            type: "string",
+            example: "2~5년",
+            description: "모집 구력 (구력 년수 범위)",
+          },
           price: {
             type: "string",
             example: "20,000원",

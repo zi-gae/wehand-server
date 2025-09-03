@@ -80,7 +80,7 @@ export const homeController = {
         id, title, venue_name, court, match_date, start_time, end_time,
         max_participants, game_type, status,
         host_name, host_ntrp, host_experience, description, price,
-        recruit_ntrp_min, recruit_ntrp_max
+        recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max
       `
       )
       .or(orClauses.join(","))
@@ -129,6 +129,10 @@ export const homeController = {
           level: formatNtrpLevel(
             match.recruit_ntrp_min,
             match.recruit_ntrp_max
+          ),
+          experience: formatExperienceLevel(
+            match.recruit_experience_min,
+            match.recruit_experience_max
           ),
           price: match.price ? formatPrice(match.price) : "무료",
           status: match.status,
@@ -188,4 +192,14 @@ function formatNtrpLevel(minNtrp?: number, maxNtrp?: number): string {
   if (!maxNtrp) return `${minNtrp}~`;
 
   return `${minNtrp}~${maxNtrp}`;
+}
+
+// 구력 레벨 포맷팅
+function formatExperienceLevel(minExperience?: number, maxExperience?: number): string {
+  if (!minExperience && !maxExperience) return "모든 구력";
+  if (minExperience === maxExperience) return `${minExperience}년`;
+  if (!minExperience) return `~${maxExperience}년`;
+  if (!maxExperience) return `${minExperience}년~`;
+
+  return `${minExperience}~${maxExperience}년`;
 }
