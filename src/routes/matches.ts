@@ -65,6 +65,20 @@ const router = Router();
  *         description: 종료 날짜 (YYYY-MM-DD, 날짜 범위 검색)
  *         example: "2024-01-31"
  *       - in: query
+ *         name: time_start
+ *         schema:
+ *           type: string
+ *           pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+ *         description: 시작 시간 범위 시작 (HH:MM)
+ *         example: "09:00"
+ *       - in: query
+ *         name: time_end
+ *         schema:
+ *           type: string
+ *           pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+ *         description: 시작 시간 범위 종료 (HH:MM)
+ *         example: "18:00"
+ *       - in: query
  *         name: ntrp_min
  *         schema:
  *           type: number

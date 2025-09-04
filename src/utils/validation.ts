@@ -154,6 +154,14 @@ export const matchFilterSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "종료 날짜 형식이 올바르지 않습니다")
     .optional(),
+  time_start: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "시작 시간 형식이 올바르지 않습니다 (HH:MM)")
+    .optional(),
+  time_end: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "종료 시간 형식이 올바르지 않습니다 (HH:MM)")
+    .optional(),
   ntrp_min: z
     .string()
     .transform((val) => (val ? parseFloat(val) : undefined))

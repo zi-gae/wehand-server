@@ -30,6 +30,8 @@ export const matchController = {
       date,
       date_start,
       date_end,
+      time_start,
+      time_end,
       ntrp_min,
       ntrp_max,
       experience_min,
@@ -135,6 +137,18 @@ export const matchController = {
     } else {
       // 기본적으로 오늘 이후 매치만
       query = query.gte("match_date", formatDate(new Date(), "date"));
+    }
+
+    // 시간 필터
+    if (time_start && time_end) {
+      // 시간 범위로 필터링 (시작 시간 기준)
+      query = query.gte("start_time", time_start).lte("start_time", time_end);
+    } else if (time_start) {
+      // 시작 시간만 있는 경우
+      query = query.gte("start_time", time_start);
+    } else if (time_end) {
+      // 종료 시간만 있는 경우
+      query = query.lte("start_time", time_end);
     }
 
     // NTRP 레벨 필터
