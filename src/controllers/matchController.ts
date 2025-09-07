@@ -16,6 +16,18 @@ import {
 } from "../utils/helpers";
 import { logger } from "../config/logger";
 
+// 클라이언트에서 전달받은 축약 지역명을 공식 행정구역명으로 변환
+const convertToOfficialRegionName = (region: string): string => {
+  return region
+    .replace("서울 ", "서울특별시 ")
+    .replace("부산 ", "부산광역시 ")
+    .replace("대구 ", "대구광역시 ")
+    .replace("인천 ", "인천광역시 ")
+    .replace("광주 ", "광주광역시 ")
+    .replace("대전 ", "대전광역시 ")
+    .replace("울산 ", "울산광역시 ");
+};
+
 export const matchController = {
   // 2.1 매치 목록 조회 (필터링/검색)
   getMatches: asyncHandler(async (req: Request, res: Response) => {
@@ -41,7 +53,7 @@ export const matchController = {
       user_lng,
     } = filters;
 
-    let query;
+    let query: any;
 
     // 거리순 정렬을 위해 venue location 정보가 필요한 경우
     if (sort === "distance" && user_lat && user_lng) {
@@ -80,15 +92,19 @@ export const matchController = {
             { count: "exact" }
           )
           .in("status", ["recruiting", "full", "confirmed"]);
-        
+
         // 지역 리스트로 필터링
         if (regions && regions.length > 0) {
-          // OR 조건으로 여러 지역 검색
-          const regionFilters = regions.map(r => `venues.region.ilike.%${r}%`).join(',');
-          query = query.or(regionFilters);
+          // 여러 지역을 각각 or 조건으로 적용
+          const convertedRegions = regions.map(convertToOfficialRegionName);
+          // 각 지역에 대해 개별적으로 .or() 메소드 호출
+          convertedRegions.forEach((r) => {
+            query = query.or(`venues.region.ilike.%${r}%`);
+          });
         } else if (region) {
-          // 단일 지역 필터 (하위 호환성)
-          query = query.ilike("venues.region", `%${region}%`);
+          // 단일 지역 필터 (하위 호환성) - 변환된 지역명 사용
+          const convertedRegion = convertToOfficialRegionName(region);
+          query = query.ilike("venues.region", `%${convertedRegion}%`);
         }
       } else {
         query = supabase
