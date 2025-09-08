@@ -119,16 +119,8 @@ export const matchController = {
           console.log("DEBUG - Filtering by regions:", regions);
           console.log("DEBUG - Converted regions:", convertedRegions);
 
-          // Supabase OR 필터 정확한 방식으로 적용
-          // 첫 번째 지역은 .ilike()로 적용하고 나머지는 .or()로 체이닝
-          if (convertedRegions.length > 0) {
-            query = query.ilike("venues.region", `%${convertedRegions[0]}%`);
-
-            // 두 번째 지역부터는 .or()로 추가
-            for (let i = 1; i < convertedRegions.length; i++) {
-              query = query.or(`venues.region.ilike.%${convertedRegions[i]}%`);
-            }
-          }
+          // regions 배열을 저장하여 나중에 JavaScript에서 필터링
+          (query as any)._regionsFilter = convertedRegions;
         } else if (region) {
           // 단일 지역 필터 (하위 호환성) - 변환된 지역명 사용
           const convertedRegion = convertToOfficialRegionName(region);
@@ -137,6 +129,7 @@ export const matchController = {
           query = query.ilike("venues.region", `%${convertedRegion}%`);
         }
       } else {
+        0;
         query = supabase
           .from("matches")
           .select(
@@ -223,9 +216,13 @@ export const matchController = {
       }
     }
 
-    // 페이징 적용
-    const offset = (page - 1) * limit;
-    query = query.range(offset, offset + limit - 1);
+    // 페이징 적용 (regions 필터가 있을 때는 나중에 JavaScript에서 처리)
+    const shouldApplyPaginationLater = regions && regions.length > 0;
+
+    if (!shouldApplyPaginationLater) {
+      const offset = (page - 1) * limit;
+      query = query.range(offset, offset + limit - 1);
+    }
 
     const { data: matches, error, count } = await query;
 
@@ -252,6 +249,36 @@ export const matchController = {
     }
 
     let processedMatches = matches || [];
+
+    // regions 필터링 (JavaScript에서 후처리)
+    let totalFilteredCount = processedMatches.length;
+
+    if (regions && regions.length > 0) {
+      const convertedRegions = regions.map(convertToOfficialRegionName);
+      processedMatches = processedMatches.filter((match: any) => {
+        const venueRegion =
+          match.venues?.region ||
+          (Array.isArray(match.venues) ? match.venues[0]?.region : "");
+
+        return convertedRegions.some(
+          (region) => venueRegion && venueRegion.includes(region)
+        );
+      });
+
+      // 필터링 후 총 개수 업데이트
+      totalFilteredCount = processedMatches.length;
+
+      // JavaScript 레벨에서 페이지네이션 적용
+      const offset = (page - 1) * limit;
+      processedMatches = processedMatches.slice(offset, offset + limit);
+
+      console.log("DEBUG - After regions filter:", {
+        originalCount: matches?.length || 0,
+        filteredCount: totalFilteredCount,
+        afterPagination: processedMatches.length,
+        regions: convertedRegions,
+      });
+    }
 
     // 거리순 정렬이 요청된 경우 별도 처리
     if (sort === "distance" && user_lat && user_lng) {
@@ -362,7 +389,10 @@ export const matchController = {
         };
       }) || [];
 
-    const pagination = createPagination(page, limit, count || 0);
+    // 페이지네이션 계산 (regions 필터링이 적용된 경우 필터링된 개수 사용)
+    const finalCount =
+      regions && regions.length > 0 ? totalFilteredCount : count || 0;
+    const pagination = createPagination(page, limit, finalCount);
 
     return ResponseHelper.successWithPagination(
       res,
