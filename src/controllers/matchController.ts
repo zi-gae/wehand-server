@@ -97,13 +97,20 @@ export const matchController = {
         if (regions && regions.length > 0) {
           // 여러 지역을 각각 or 조건으로 적용
           const convertedRegions = regions.map(convertToOfficialRegionName);
+
+          console.log("DEBUG - Filtering by regions:", regions);
+          console.log("DEBUG - Converted regions:", convertedRegions);
+
           // 각 지역에 대해 개별적으로 .or() 메소드 호출
           convertedRegions.forEach((r) => {
+            console.log(`DEBUG - Adding .or() filter for region: ${r}`);
             query = query.or(`venues.region.ilike.%${r}%`);
           });
         } else if (region) {
           // 단일 지역 필터 (하위 호환성) - 변환된 지역명 사용
           const convertedRegion = convertToOfficialRegionName(region);
+          console.log("DEBUG - Filtering by single region:", region);
+          console.log("DEBUG - Converted region:", convertedRegion);
           query = query.ilike("venues.region", `%${convertedRegion}%`);
         }
       } else {
@@ -198,6 +205,18 @@ export const matchController = {
     query = query.range(offset, offset + limit - 1);
 
     const { data: matches, error, count } = await query;
+
+    console.log("DEBUG - Final query result:", {
+      count,
+      hasRegions: !!regions,
+      regionsLength: regions ? regions.length : 0,
+      hasRegion: !!region,
+      matchesCount: matches ? matches.length : 0,
+    });
+
+    if (matches && matches.length > 0) {
+      console.log("DEBUG - First match venue:", matches[0].venues);
+    }
 
     if (region) {
       console.log("Final matches after all filters:", matches, region);
