@@ -267,7 +267,7 @@ export const matchController = {
       });
 
       // 거리순으로 정렬
-      matchesWithDistance.sort((a, b) => {
+      matchesWithDistance.sort((a: any, b: any) => {
         const distA = a.calculated_distance ?? Infinity;
         const distB = b.calculated_distance ?? Infinity;
         return distA - distB;
