@@ -134,10 +134,14 @@ export const matchFilterSchema = z.object({
   search: z.string().max(100, "검색어는 100자 이하여야 합니다").optional(),
   region: z.string().max(100, "지역은 100자 이하여야 합니다").optional(),
   regions: z
-    .union([
-      z.string().transform((val) => val.split(",")),
-      z.array(z.string()),
-    ])
+    .preprocess((val) => {
+      // 배열인 경우 (req.query에서 regions[]로 왔을 때)
+      if (Array.isArray(val)) return val;
+      // 문자열인 경우 쉼표로 구분하여 배열로 변환
+      if (typeof val === "string") return val.split(",");
+      // 처리할 수 없는 형식일 경우 빈 배열 반환
+      return [];
+    }, z.array(z.string()))
     .optional(),
   game_type: z
     .enum(["singles", "mens_doubles", "womens_doubles", "mixed_doubles"])
@@ -156,11 +160,17 @@ export const matchFilterSchema = z.object({
     .optional(),
   time_start: z
     .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "시작 시간 형식이 올바르지 않습니다 (HH:MM)")
+    .regex(
+      /^([01]\d|2[0-3]):([0-5]\d)$/,
+      "시작 시간 형식이 올바르지 않습니다 (HH:MM)"
+    )
     .optional(),
   time_end: z
     .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "종료 시간 형식이 올바르지 않습니다 (HH:MM)")
+    .regex(
+      /^([01]\d|2[0-3]):([0-5]\d)$/,
+      "종료 시간 형식이 올바르지 않습니다 (HH:MM)"
+    )
     .optional(),
   ntrp_min: z
     .string()

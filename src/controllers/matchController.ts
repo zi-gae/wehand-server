@@ -31,7 +31,22 @@ const convertToOfficialRegionName = (region: string): string => {
 export const matchController = {
   // 2.1 매치 목록 조회 (필터링/검색)
   getMatches: asyncHandler(async (req: Request, res: Response) => {
-    const filters = matchFilterSchema.parse(req.query);
+    console.log("원본 쿼리 파라미터:", req.query);
+
+    // Express에서 regions[] 형식의 쿼리 파라미터 처리
+    const queryObj = { ...req.query };
+
+    // regions[] 키가 있다면 regions 키로 변환
+    if (queryObj["regions[]"] !== undefined) {
+      const regionsValue = queryObj["regions[]"];
+      queryObj.regions = regionsValue;
+      delete queryObj["regions[]"];
+    }
+
+    console.log("쿼리 파라미터 변환:", queryObj);
+    const filters = matchFilterSchema.parse(queryObj);
+    console.log("Zod로 파싱된 필터:", filters);
+
     const {
       page,
       limit,
@@ -52,6 +67,8 @@ export const matchController = {
       user_lat,
       user_lng,
     } = filters;
+
+    console.log("DEBUG - Received filters:", req.query);
 
     let query: any;
 
@@ -98,14 +115,20 @@ export const matchController = {
           // 여러 지역을 각각 or 조건으로 적용
           const convertedRegions = regions.map(convertToOfficialRegionName);
 
+          console.log("DEBUG - regions 배열:", regions);
           console.log("DEBUG - Filtering by regions:", regions);
           console.log("DEBUG - Converted regions:", convertedRegions);
 
-          // 각 지역에 대해 개별적으로 .or() 메소드 호출
-          convertedRegions.forEach((r) => {
-            console.log(`DEBUG - Adding .or() filter for region: ${r}`);
-            query = query.or(`venues.region.ilike.%${r}%`);
-          });
+          // Supabase OR 필터 정확한 방식으로 적용
+          // 첫 번째 지역은 .ilike()로 적용하고 나머지는 .or()로 체이닝
+          if (convertedRegions.length > 0) {
+            query = query.ilike("venues.region", `%${convertedRegions[0]}%`);
+
+            // 두 번째 지역부터는 .or()로 추가
+            for (let i = 1; i < convertedRegions.length; i++) {
+              query = query.or(`venues.region.ilike.%${convertedRegions[i]}%`);
+            }
+          }
         } else if (region) {
           // 단일 지역 필터 (하위 호환성) - 변환된 지역명 사용
           const convertedRegion = convertToOfficialRegionName(region);
