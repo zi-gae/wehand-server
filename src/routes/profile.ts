@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { profileController } from '../controllers/profileController';
-import { requireAuth } from '../middleware/auth';
+import { Router } from "express";
+import { profileController } from "../controllers/profileController";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
@@ -9,6 +9,7 @@ const router = Router();
  * /api/profile/me:
  *   get:
  *     summary: 내 프로필 조회
+ *     description: 로그인한 사용자의 상세 프로필 정보, 통계, 리뷰 정보를 조회합니다
  *     tags: [Profile]
  *     security:
  *       - BearerAuth: []
@@ -25,14 +26,60 @@ const router = Router();
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/UserProfile'
+ *             example:
+ *               success: true
+ *               data:
+ *                 userInfo:
+ *                   id: "024ba6dd-ea6f-41be-8411-96624bff34b8"
+ *                   email: "user@example.com"
+ *                   name: "김테니스"
+ *                   nickname: "tennis_king"
+ *                   location: "서울시 강남구"
+ *                   bio: "테니스를 사랑하는 주말 플레이어입니다"
+ *                   profileImageUrl: "https://example.com/profile.jpg"
+ *                   gender: "male"
+ *                   ntrp: 4.0
+ *                   experienceYears: 5
+ *                   favoriteStyle: "공격형"
+ *                   createdAt: "2024-01-01T00:00:00Z"
+ *                   updatedAt: "2024-01-20T12:00:00Z"
+ *                 stats:
+ *                   totalMatches: 47
+ *                   wins: 32
+ *                   losses: 15
+ *                   winRate: 68
+ *                   ranking: null
+ *                 reviews:
+ *                   totalReviews: 23
+ *                   totalRatingSum: 95
+ *                   avgNtrp: 4.2
+ *                   avgRating: 4.1
+ *                   comments:
+ *                     - comment: "정말 좋은 매치였습니다!"
+ *                       nickname: "tennis_lover"
+ *                       createdAt: "2024-01-20T14:30:00Z"
+ *                     - comment: "실력도 좋고 매너도 훌륭해요"
+ *                       nickname: "match_master"
+ *                       createdAt: "2024-01-19T10:15:00Z"
  *       401:
  *         description: 인증 필요
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: "USER_NOT_FOUND"
+ *                 message: "사용자를 찾을 수 없습니다"
  */
-router.get('/me', requireAuth, profileController.getMyProfile);
+router.get("/me", requireAuth, profileController.getMyProfile);
 
 /**
  * @swagger
@@ -68,7 +115,7 @@ router.get('/me', requireAuth, profileController.getMyProfile);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/me', requireAuth, profileController.updateProfile);
+router.put("/me", requireAuth, profileController.updateProfile);
 
 /**
  * @swagger
@@ -104,7 +151,7 @@ router.put('/me', requireAuth, profileController.updateProfile);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/users/:userId', profileController.getUserProfile);
+router.get("/users/:userId", profileController.getUserProfile);
 
 /**
  * @swagger
@@ -168,7 +215,7 @@ router.get('/users/:userId', profileController.getUserProfile);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/my-matches', requireAuth, profileController.getMyMatches);
+router.get("/my-matches", requireAuth, profileController.getMyMatches);
 
 /**
  * @swagger
@@ -218,7 +265,7 @@ router.get('/my-matches', requireAuth, profileController.getMyMatches);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/my-reviews', requireAuth, profileController.getMyReviews);
+router.get("/my-reviews", requireAuth, profileController.getMyReviews);
 
 /**
  * @swagger
@@ -273,8 +320,7 @@ router.get('/my-reviews', requireAuth, profileController.getMyReviews);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/users/:userId/reviews', profileController.getUserReviews);
-
+router.get("/users/:userId/reviews", profileController.getUserReviews);
 
 /**
  * @swagger
@@ -324,6 +370,6 @@ router.get('/users/:userId/reviews', profileController.getUserReviews);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/bookmarks', requireAuth, profileController.getBookmarkedMatches);
+router.get("/bookmarks", requireAuth, profileController.getBookmarkedMatches);
 
 export default router;

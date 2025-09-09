@@ -214,37 +214,45 @@ const swaggerDefinition = {
             example: 4.0,
             description: "NTRP 레벨 (1.0-7.0)",
           },
-          experience_years: {
+          experienceYears: {
             type: "integer",
             minimum: 0,
             maximum: 50,
             example: 5,
             description: "테니스 구력 (년)",
           },
-          favorite_style: {
+          favoriteStyle: {
             type: "string",
             example: "공격적 베이스라인",
             description: "선호하는 플레이 스타일",
           },
-          total_reviews: {
-            type: "integer",
-            example: 12,
-            description: "받은 리뷰 총 개수",
+          reviewNtrp: {
+            type: "number",
+            format: "float",
+            example: 4.2,
+            description: "리뷰 기반 평균 NTRP",
           },
-          positive_reviews: {
+          positiveReviews: {
             type: "integer",
             example: 9,
             description: "긍정적 리뷰 수",
           },
-          negative_reviews: {
+          negativeReviews: {
             type: "integer",
             example: 3,
             description: "부정적 리뷰 수",
           },
-          review_ntrp: {
-            type: "number",
-            example: 4.2,
-            description: "리뷰 기반 평균 NTRP",
+          createdAt: {
+            type: "string",
+            format: "date-time",
+            example: "2024-01-15T09:00:00Z",
+            description: "계정 생성일시",
+          },
+          updatedAt: {
+            type: "string",
+            format: "date-time",
+            example: "2024-01-20T14:30:00Z",
+            description: "마지막 수정일시",
           },
         },
       },
@@ -294,20 +302,56 @@ const swaggerDefinition = {
                 example: 23,
                 description: "받은 리뷰 총 개수",
               },
-              positiveReviews: {
+              totalRatingSum: {
                 type: "integer",
-                example: 19,
-                description: "긍정적 리뷰 수",
+                example: 95,
+                description: "받은 모든 평점의 합계",
               },
-              negativeReviews: {
-                type: "integer",
-                example: 4,
-                description: "부정적 리뷰 수",
+              avgNtrp: {
+                type: "number",
+                format: "float",
+                example: 4.2,
+                description: "리뷰에서 평가받은 NTRP 평균값 (소수점 1자리)",
               },
               avgRating: {
                 type: "number",
+                format: "float",
                 example: 4.1,
-                description: "평균 평점",
+                description: "평균 평점 (소수점 1자리)",
+              },
+              comments: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    comment: {
+                      type: "string",
+                      description: "리뷰 코멘트 내용",
+                    },
+                    nickname: {
+                      type: "string",
+                      description: "리뷰 작성자 닉네임",
+                    },
+                    createdAt: {
+                      type: "string",
+                      format: "date-time",
+                      description: "리뷰 작성일시",
+                    },
+                  },
+                },
+                example: [
+                  {
+                    comment: "정말 좋은 매치였습니다!",
+                    nickname: "tennis_lover",
+                    createdAt: "2024-01-20T14:30:00Z",
+                  },
+                  {
+                    comment: "실력도 좋고 매너도 훌륭해요",
+                    nickname: "match_master",
+                    createdAt: "2024-01-19T10:15:00Z",
+                  },
+                ],
+                description: "받은 리뷰의 코멘트 목록",
               },
             },
           },

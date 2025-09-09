@@ -40,7 +40,10 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
       experience_years,
       favorite_style,
       created_at,
-      updated_at
+      updated_at,
+      review_ntrp,
+      positive_reviews,
+      negative_reviews
       `
       )
       .eq("id", userId)
@@ -73,7 +76,15 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
       // 리뷰 정보
       supabase
         .from("match_reviews")
-        .select("rating, ntrp")
+        .select(
+          `
+          rating, 
+          ntrp, 
+          comment,
+          created_at,
+          reviewer:reviewer_id(nickname)
+        `
+        )
         .eq("reviewee_id", userId),
     ]);
 
@@ -108,7 +119,18 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
     res.json({
       success: true,
       data: {
-        userInfo: user,
+        userInfo: {
+          ...user,
+          // snake_case to camelCase
+          profileImageUrl: user.profile_image_url,
+          experienceYears: user.experience_years,
+          favoriteStyle: user.favorite_style,
+          reviewNtrp: user.review_ntrp,
+          positiveReviews: user.positive_reviews,
+          negativeReviews: user.negative_reviews,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+        },
         stats: {
           totalMatches,
           wins: totalWins,
@@ -121,6 +143,14 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
           totalRatingSum,
           avgNtrp: avgNtrp ? Math.round(avgNtrp * 10) / 10 : null,
           avgRating: avgRating ? Math.round(avgRating * 10) / 10 : null,
+          comments:
+            reviews
+              ?.filter((r) => r.comment) // comment가 있는 것만 필터링
+              .map((r) => ({
+                comment: r.comment,
+                nickname: (r.reviewer as any)?.nickname || "Unknown",
+                createdAt: r.created_at,
+              })) || [],
         },
       },
     });
