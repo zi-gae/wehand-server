@@ -1104,7 +1104,7 @@ export const matchController = {
     const { data: chatRoom, error: chatError } = await supabase
       .from("chat_rooms")
       .insert({
-        name: `${hostData?.nickname || hostData?.name} & ${
+        name: `${match.title} | ${hostData?.nickname || hostData?.name} & ${
           userData?.nickname || userData?.name
         }`,
         type: "private",
