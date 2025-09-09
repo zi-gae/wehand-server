@@ -71,7 +71,10 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
         .eq("winner_id", userId),
 
       // 리뷰 정보
-      supabase.from("match_reviews").select("rating").eq("reviewee_id", userId),
+      supabase
+        .from("match_reviews")
+        .select("rating, ntrp")
+        .eq("reviewee_id", userId),
     ]);
 
     if (matchesError || winsError || reviewsError) {
@@ -89,8 +92,14 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
 
     // 리뷰 분석
     const totalReviews = reviews?.length || 0;
-    const positiveReviews = reviews?.filter((r) => r.rating >= 4).length || 0;
-    const negativeReviews = reviews?.filter((r) => r.rating < 3).length || 0;
+    const totalRatingSum =
+      reviews?.reduce((sum, r) => sum + (r.rating || 0), 0) || 0;
+    const validNtrpEvaluations = reviews?.filter((r) => r.ntrp != null) || [];
+    const avgNtrp =
+      validNtrpEvaluations.length > 0
+        ? validNtrpEvaluations.reduce((sum, r) => sum + r.ntrp, 0) /
+          validNtrpEvaluations.length
+        : null;
     const avgRating =
       totalReviews > 0 && reviews
         ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / totalReviews
@@ -109,8 +118,8 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
         },
         reviews: {
           totalReviews,
-          positiveReviews,
-          negativeReviews,
+          totalRatingSum,
+          avgNtrp: avgNtrp ? Math.round(avgNtrp * 10) / 10 : null,
           avgRating: avgRating ? Math.round(avgRating * 10) / 10 : null,
         },
       },
@@ -588,7 +597,6 @@ export const getBookmarkedMatches = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-
 
 // 특정 사용자의 리뷰 조회 (공개)
 export const getUserReviews = async (req: Request, res: Response) => {

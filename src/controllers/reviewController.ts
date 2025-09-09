@@ -232,8 +232,9 @@ export const reviewController = {
       match_id: matchId,
       reviewer_id: reviewerId,
       reviewee_id: reviewData.revieweeId,
-      rating: reviewData.isPositive ? 5 : 2, // 좋아요는 5점, 싫어요는 2점
+      rating: reviewData.isPositive ? 1 : -1, // 좋아요는 1점, 싫어요는 -1점
       comment: reviewData.comment || null,
+      ntrp: reviewData.ntrp,
     });
 
     if (insertError) {
