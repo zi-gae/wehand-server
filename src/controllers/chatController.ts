@@ -53,6 +53,8 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
     // 각 채팅방의 상세 정보를 별도로 조회
     const processedRooms = await Promise.all(
       (chatRooms || []).map(async (participant: any) => {
+        // last_read_message_id가 null인 경우 제외
+
         // 채팅방 기본 정보 조회
         const { data: room } = await supabase
           .from("chat_rooms")
@@ -186,9 +188,9 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
       })
     );
 
-    // null 값 필터링 및 최신순 정렬
+    // null 값 필터링 및 lastMessage가 없는 채팅방 제거 후 최신순 정렬
     const validRooms = processedRooms
-      .filter((room) => room !== null)
+      .filter((room) => room !== null && room?.lastMessage !== null)
       .sort((a, b) => {
         // 마지막 메시지가 있는 경우 해당 시간 기준으로 정렬
         const timeA =
@@ -248,42 +250,42 @@ export const createChatRoom = async (req: AuthRequest, res: Response) => {
 
     const { type, participant_ids, match_id, name } = validation.data;
 
-    // 매치 채팅방의 경우 중복 생성 방지
-    // if (type === "match" && match_id) {
-    //   const { data: existingRoom } = await supabase
-    //     .from("chat_rooms")
-    //     .select("id")
-    //     .eq("type", "match")
-    //     .eq("match_id", match_id)
-    //     .single();
+    매치 채팅방의 경우 중복 생성 방지
+    if (type === "match" && match_id) {
+      const { data: existingRoom } = await supabase
+        .from("chat_rooms")
+        .select("id")
+        .eq("type", "match")
+        .eq("match_id", match_id)
+        .single();
 
-    //   if (existingRoom) {
-    //     // 기존 채팅방에 사용자 추가 (참가하지 않은 경우)
-    //     const { data: participation } = await supabase
-    //       .from("chat_participants")
-    //       .select("id")
-    //       .eq("room_id", existingRoom.id)
-    //       .eq("user_id", userId)
-    //       .eq("is_active", true)
-    //       .single();
+      if (existingRoom) {
+        // 기존 채팅방에 사용자 추가 (참가하지 않은 경우)
+        const { data: participation } = await supabase
+          .from("chat_participants")
+          .select("id")
+          .eq("room_id", existingRoom.id)
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .single();
 
-    //     if (!participation) {
-    //       await supabase.from("chat_participants").insert({
-    //         room_id: existingRoom.id,
-    //         user_id: userId,
-    //         is_active: true,
-    //       });
-    //     }
+        if (!participation) {
+          await supabase.from("chat_participants").insert({
+            room_id: existingRoom.id,
+            user_id: userId,
+            is_active: true,
+          });
+        }
 
-    //     return res.json({
-    //       success: true,
-    //       data: {
-    //         id: existingRoom.id,
-    //         message: "채팅방에 참가했습니다",
-    //       },
-    //     });
-    //   }
-    // }
+        return res.json({
+          success: true,
+          data: {
+            id: existingRoom.id,
+            message: "채팅방에 참가했습니다",
+          },
+        });
+      }
+    }
 
     // 1:1 채팅방의 경우 기존 채팅방 확인
     if (type === "private" && participant_ids && participant_ids.length === 1) {
