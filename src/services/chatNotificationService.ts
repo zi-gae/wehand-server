@@ -7,7 +7,12 @@ interface ChatNotificationParams {
   title?: string | null;
   messageId: string;
   content: string;
-  type?: "chat" | "system"; // 기본값은 "chat"
+  type?:
+    | "chat"
+    | "system"
+    | "match_approval_cancel"
+    | "match_approval_request"
+    | "match_approval_confirm";
 }
 
 export async function createChatMessageNotifications(

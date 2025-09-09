@@ -749,17 +749,6 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       .update({ updated_at: new Date().toISOString() })
       .eq("id", chatRoomId);
 
-    // 메시지를 보낸 사용자의 last_read_message_id 자동 갱신 (시스템 메시지 포함)
-    // if (userId) {
-    //   await supabase
-    //     .from("chat_participants")
-    //     .update({
-    //       last_read_message_id: message.id,
-    //     })
-    //     .eq("room_id", chatRoomId)
-    //     .eq("user_id", userId);
-    // }
-
     // 메시지 알림 생성 (system 포함)
     if (message) {
       let senderNickname = "알 수 없음";
@@ -817,7 +806,8 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         title: senderNickname,
         messageId: message.id,
         content: notificationContent,
-        type: message.message_type === "system" ? "system" : "chat",
+        type:
+          message.message_type === "system" ? "match_approval_request" : "chat",
       }).catch(() => {});
     }
 
@@ -1603,7 +1593,7 @@ export const approveMatchParticipant = async (
       content: `${
         approvedUser?.nickname || "사용자"
       }님의 매치 참가가 확정되었습니다.`,
-      type: "system",
+      type: "match_approval_confirm",
     }).catch(() => {});
 
     res.json({
@@ -1823,7 +1813,7 @@ export const cancelMatchApproval = async (req: AuthRequest, res: Response) => {
       content: `${
         cancelledUser?.nickname || "사용자"
       }님의 매치 참가 확정이 취소되었습니다.`,
-      type: "system",
+      type: "match_approval_cancel",
     }).catch(() => {});
 
     res.json({
