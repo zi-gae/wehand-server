@@ -432,7 +432,7 @@ export const matchController = {
       .select(
         `
         user_id, is_host,
-        users!inner(id, name, ntrp, experience_years)
+        users!inner(id, name, ntrp, experience_years, nickname)
       `
       )
       .eq("match_id", matchId)
@@ -447,6 +447,7 @@ export const matchController = {
           ? `${p.users.experience_years}년`
           : "미설정",
         isHost: p.is_host,
+        nickname: p.users.nickname || "",
       })) || [];
 
     // 실제 확정된 참가자 수 계산 (호스트 제외)

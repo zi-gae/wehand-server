@@ -483,6 +483,11 @@ const swaggerDefinition = {
                   example: "김테니스",
                   description: "참가자 이름",
                 },
+                nickname: {
+                  type: "string",
+                  example: "테니스왕",
+                  description: "참가자 닉네임",
+                },
                 ntrp: {
                   type: "string",
                   example: "4.0",
