@@ -53,11 +53,6 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
     // 각 채팅방의 상세 정보를 별도로 조회
     const processedRooms = await Promise.all(
       (chatRooms || []).map(async (participant: any) => {
-        // last_read_message_id가 null인 경우 제외
-        if (participant.last_read_message_id === null) {
-          return null;
-        }
-
         // 채팅방 기본 정보 조회
         const { data: room } = await supabase
           .from("chat_rooms")
@@ -753,18 +748,17 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       .eq("id", chatRoomId);
 
     // 메시지를 보낸 사용자의 last_read_message_id 자동 갱신 (시스템 메시지 포함)
-    if (userId) {
-      await supabase
-        .from("chat_participants")
-        .update({
-          last_read_message_id: message.id,
-        })
-        .eq("room_id", chatRoomId)
-        .eq("user_id", userId);
-    }
+    // if (userId) {
+    //   await supabase
+    //     .from("chat_participants")
+    //     .update({
+    //       last_read_message_id: message.id,
+    //     })
+    //     .eq("room_id", chatRoomId)
+    //     .eq("user_id", userId);
+    // }
 
     // 메시지 알림 생성 (system 포함)
-    console.log("@@message.message_type", message.message_type);
     if (message) {
       let senderNickname = "알 수 없음";
       let notificationContent = message.content;
