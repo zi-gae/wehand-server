@@ -987,7 +987,8 @@ export const markMessagesAsRead = async (req: AuthRequest, res: Response) => {
         timestamp: new Date().toISOString(),
       });
 
-      // 해당 채팅방과 관련된 읽지 않은 알림들을 읽음 처리
+      // 해당 부분을 다음과 같이 수정
+      // 현재 코드를 다음과 같이 수정해보세요
       await supabase
         .from("notifications")
         .update({
@@ -997,7 +998,7 @@ export const markMessagesAsRead = async (req: AuthRequest, res: Response) => {
         .eq("user_id", userId)
         .eq("is_read", false)
         .or(
-          `action_data->chatRoomId.eq."${chatRoomId}",chat_room_id.eq.${chatRoomId}`
+          `action_data->>chatRoomId.eq.${chatRoomId},chat_room_id.eq.${chatRoomId}`
         );
     }
 
