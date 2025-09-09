@@ -1677,54 +1677,61 @@ const swaggerDefinition = {
             type: "string",
             format: "uuid",
             description: "차단 기록 ID",
-            example: "550e8400-e29b-41d4-a716-446655440000"
+            example: "550e8400-e29b-41d4-a716-446655440000",
           },
           blocker_id: {
             type: "string",
-            format: "uuid", 
+            format: "uuid",
             description: "차단한 사용자 ID",
-            example: "550e8400-e29b-41d4-a716-446655440001"
+            example: "550e8400-e29b-41d4-a716-446655440001",
           },
           blocked_id: {
             type: "string",
             format: "uuid",
-            description: "차단당한 사용자 ID", 
-            example: "550e8400-e29b-41d4-a716-446655440002"
+            description: "차단당한 사용자 ID",
+            example: "550e8400-e29b-41d4-a716-446655440002",
           },
           reason: {
             type: "string",
-            enum: ["spam", "harassment", "inappropriate_behavior", "fake_profile", "no_show", "other"],
+            enum: [
+              "spam",
+              "harassment",
+              "inappropriate_behavior",
+              "fake_profile",
+              "no_show",
+              "other",
+            ],
             description: "차단 사유 코드",
-            example: "harassment"
+            example: "harassment",
           },
           reason_detail: {
             type: "string",
             description: "상세 차단 사유",
             example: "반복적인 욕설 및 괴롭힘",
-            maxLength: 500
+            maxLength: 500,
           },
           created_at: {
             type: "string",
             format: "date-time",
-            description: "차단 생성일시"
+            description: "차단 생성일시",
           },
           blocked_user_name: {
             type: "string",
             description: "차단된 사용자 이름",
-            example: "김테니스"
+            example: "김테니스",
           },
           blocked_user_nickname: {
             type: "string",
             description: "차단된 사용자 닉네임",
-            example: "tennis_king"
+            example: "tennis_king",
           },
           blocked_user_profile_image: {
             type: "string",
             format: "uri",
             description: "차단된 사용자 프로필 이미지 URL",
-            example: "https://example.com/profile.jpg"
-          }
-        }
+            example: "https://example.com/profile.jpg",
+          },
+        },
       },
 
       BlockUserRequest: {
@@ -1732,17 +1739,24 @@ const swaggerDefinition = {
         properties: {
           reason: {
             type: "string",
-            enum: ["spam", "harassment", "inappropriate_behavior", "fake_profile", "no_show", "other"],
+            enum: [
+              "spam",
+              "harassment",
+              "inappropriate_behavior",
+              "fake_profile",
+              "no_show",
+              "other",
+            ],
             description: "차단 사유 코드 (선택)",
-            example: "harassment"
+            example: "harassment",
           },
           reasonDetail: {
             type: "string",
             description: "상세 차단 사유 (선택)",
             example: "반복적인 욕설 및 괴롭힘",
-            maxLength: 500
-          }
-        }
+            maxLength: 500,
+          },
+        },
       },
 
       BlockStatusResponse: {
@@ -1752,17 +1766,17 @@ const swaggerDefinition = {
           isBlocked: {
             type: "boolean",
             description: "양방향 차단 여부 (둘 중 하나라도 차단한 경우)",
-            example: true
+            example: true,
           },
           iBlockedThem: {
-            type: "boolean", 
+            type: "boolean",
             description: "내가 상대방을 차단했는지 여부",
-            example: true
+            example: true,
           },
           theyBlockedMe: {
             type: "boolean",
-            description: "상대방이 나를 차단했는지 여부", 
-            example: false
+            description: "상대방이 나를 차단했는지 여부",
+            example: false,
           },
           myBlock: {
             type: "object",
@@ -1771,19 +1785,19 @@ const swaggerDefinition = {
               id: {
                 type: "string",
                 format: "uuid",
-                description: "차단 기록 ID"
+                description: "차단 기록 ID",
               },
               reason: {
                 type: "string",
-                description: "차단 사유"
+                description: "차단 사유",
               },
               blockedAt: {
                 type: "string",
                 format: "date-time",
-                description: "차단 일시"
-              }
+                description: "차단 일시",
+              },
             },
-            description: "내가 차단한 정보 (차단하지 않은 경우 null)"
+            description: "내가 차단한 정보 (차단하지 않은 경우 null)",
           },
           theirBlock: {
             type: "object",
@@ -1792,21 +1806,21 @@ const swaggerDefinition = {
               id: {
                 type: "string",
                 format: "uuid",
-                description: "차단 기록 ID"
+                description: "차단 기록 ID",
               },
               reason: {
-                type: "string", 
-                description: "차단 사유"
+                type: "string",
+                description: "차단 사유",
               },
               blockedAt: {
                 type: "string",
                 format: "date-time",
-                description: "차단 일시"
-              }
+                description: "차단 일시",
+              },
             },
-            description: "상대방이 차단한 정보 (차단하지 않은 경우 null)"
-          }
-        }
+            description: "상대방이 차단한 정보 (차단하지 않은 경우 null)",
+          },
+        },
       },
 
       BlockReason: {
@@ -1815,16 +1829,23 @@ const swaggerDefinition = {
         properties: {
           code: {
             type: "string",
-            enum: ["spam", "harassment", "inappropriate_behavior", "fake_profile", "no_show", "other"],
+            enum: [
+              "spam",
+              "harassment",
+              "inappropriate_behavior",
+              "fake_profile",
+              "no_show",
+              "other",
+            ],
             description: "차단 사유 코드",
-            example: "harassment"
+            example: "harassment",
           },
           label: {
             type: "string",
             description: "차단 사유 표시 텍스트",
-            example: "괴롭힘/욕설"
-          }
-        }
+            example: "괴롭힘/욕설",
+          },
+        },
       },
 
       BlockedUsersResponse: {
@@ -1834,14 +1855,14 @@ const swaggerDefinition = {
           blockedUsers: {
             type: "array",
             items: {
-              $ref: "#/components/schemas/BlockedUser"
+              $ref: "#/components/schemas/BlockedUser",
             },
-            description: "차단한 사용자 목록"
+            description: "차단한 사용자 목록",
           },
           pagination: {
-            $ref: "#/components/schemas/PaginationInfo"
-          }
-        }
+            $ref: "#/components/schemas/PaginationInfo",
+          },
+        },
       },
 
       // =============================================
