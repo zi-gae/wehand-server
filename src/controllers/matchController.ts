@@ -384,6 +384,7 @@ export const matchController = {
                 ? match.users[0]?.name
                 : match.users?.name)) ||
             "",
+          hostNickname: match.host_nickname || "",
           description: match.description || "",
           distance: distance ? `${distance.toFixed(1)}km` : null,
         };
@@ -415,7 +416,7 @@ export const matchController = {
         recruit_ntrp_min, recruit_ntrp_max, recruit_experience_min, recruit_experience_max,
         rules, equipment, parking_info,
         venues(name, address, region, amenities),
-        users!host_id(name, ntrp, experience_years)
+        users!host_id(name, ntrp, experience_years, nickname)
       `
       )
       .eq("id", matchId)
@@ -485,6 +486,7 @@ export const matchController = {
       status: match.status,
       hostName: host?.name || "",
       hostNtrp: host?.ntrp?.toString() || "미설정",
+      hostNickname: host?.nickname || "",
       hostExperience: host?.experience_years
         ? `${host.experience_years}년`
         : "미설정",

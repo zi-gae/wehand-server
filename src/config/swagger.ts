@@ -423,6 +423,11 @@ const swaggerDefinition = {
             example: "4.0",
             description: "호스트 NTRP 레벨",
           },
+          hostNickname: {
+            type: "string",
+            example: "테니스왕",
+            description: "호스트 닉네임",
+          },
           hostExperience: {
             type: "string",
             example: "3년",
