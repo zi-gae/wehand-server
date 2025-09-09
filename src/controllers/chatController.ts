@@ -250,7 +250,7 @@ export const createChatRoom = async (req: AuthRequest, res: Response) => {
 
     const { type, participant_ids, match_id, name } = validation.data;
 
-    매치 채팅방의 경우 중복 생성 방지
+    // 매치 채팅방의 경우 중복 생성 방지
     if (type === "match" && match_id) {
       const { data: existingRoom } = await supabase
         .from("chat_rooms")
