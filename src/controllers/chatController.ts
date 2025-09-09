@@ -143,29 +143,17 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
           }
         }
 
-        // 읽지 않은 메시지 수 계산
-        let unreadCount = 0;
-        if (participant.last_read_message_id) {
-          // 마지막 읽은 메시지 이후의 메시지 수 계산
-          const { count } = await supabase
-            .from("messages")
-            .select("*", { count: "exact", head: true })
-            .eq("room_id", room.id)
-            .neq("sender_id", userId) // 자신이 보낸 메시지 제외
-            .gt(
-              "created_at",
-              `(SELECT created_at FROM messages WHERE id = '${participant.last_read_message_id}')`
-            );
-          unreadCount = count || 0;
-        } else {
-          // 읽은 메시지가 없으면 모든 메시지가 읽지 않음
-          const { count } = await supabase
-            .from("messages")
-            .select("*", { count: "exact", head: true })
-            .eq("room_id", room.id)
-            .neq("sender_id", userId); // 자신이 보낸 메시지 제외
-          unreadCount = count || 0;
-        }
+        // notifications 테이블에서 읽지 않은 알림 수 계산
+        // action_data의 chatRoomId를 올바르게 조회
+        const { count: unreadCount } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("is_read", false)
+          .eq("type", "chat")
+          .eq("action_data->>chatRoomId", room.id);
+
+        console.log("@@@unreadCount", unreadCount);
 
         return {
           id: room.id,
@@ -182,7 +170,7 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
                 sender: senderInfo,
               }
             : null,
-          unreadCount,
+          unreadCount: unreadCount || 0,
           updatedAt: room.updated_at,
         };
       })
@@ -398,6 +386,19 @@ export const getChatRoom = async (req: AuthRequest, res: Response) => {
       throw new ApiError(403, "채팅방에 접근할 권한이 없습니다", "FORBIDDEN");
     }
 
+    // 해당 채팅방과 관련된 읽지 않은 알림들을 읽음 처리
+    await supabase
+      .from("notifications")
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .eq("is_read", false)
+      .or(
+        `action_data->chatRoomId.eq."${chatRoomId}",chat_room_id.eq.${chatRoomId}`
+      );
+
     // 채팅방 정보 조회
     const { data: chatRoom, error } = await supabase
       .from("chat_rooms")
@@ -512,6 +513,19 @@ export const getAllMessages = async (req: AuthRequest, res: Response) => {
       throw new ApiError(403, "채팅방에 접근할 권한이 없습니다", "FORBIDDEN");
     }
 
+    // 해당 채팅방과 관련된 읽지 않은 알림들을 읽음 처리
+    await supabase
+      .from("notifications")
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .eq("is_read", false)
+      .or(
+        `action_data->chatRoomId.eq."${chatRoomId}",chat_room_id.eq.${chatRoomId}`
+      );
+
     // 모든 메시지 조회
     const { data: messages, error } = await supabase
       .from("messages")
@@ -591,6 +605,19 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
     if (!participation) {
       throw new ApiError(403, "채팅방에 접근할 권한이 없습니다", "FORBIDDEN");
     }
+
+    // 해당 채팅방과 관련된 읽지 않은 알림들을 읽음 처리
+    await supabase
+      .from("notifications")
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .eq("is_read", false)
+      .or(
+        `action_data->chatRoomId.eq."${chatRoomId}",chat_room_id.eq.${chatRoomId}`
+      );
 
     const offset = (Number(page) - 1) * Number(limit);
 
@@ -959,6 +986,19 @@ export const markMessagesAsRead = async (req: AuthRequest, res: Response) => {
         messageId,
         timestamp: new Date().toISOString(),
       });
+
+      // 해당 채팅방과 관련된 읽지 않은 알림들을 읽음 처리
+      await supabase
+        .from("notifications")
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("is_read", false)
+        .or(
+          `action_data->chatRoomId.eq."${chatRoomId}",chat_room_id.eq.${chatRoomId}`
+        );
     }
 
     res.json({

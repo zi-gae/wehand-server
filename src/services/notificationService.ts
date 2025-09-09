@@ -117,7 +117,7 @@ export class NotificationService {
         user_id: parentCommentAuthorId,
         type: "community",
         title: "댓글에 답글이 달렸습니다",
-        message: `${replierNickname}님이 회원님의 댓글에 답글을 남겼습니다: "${truncatedContent}"`,
+        message: `회원님의 댓글에 답글을 남겼습니다: "${truncatedContent}"`,
         post_id: postId,
         action_data: {
           type: "navigate",

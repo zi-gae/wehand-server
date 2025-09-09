@@ -9,11 +9,13 @@ import { z } from "zod";
 const updateFcmTokenSchema = z.object({
   fcmToken: z.string().min(1),
   deviceType: z.enum(["ios", "android"]).optional().default("ios"),
-  deviceInfo: z.object({
-    userAgent: z.string().optional(),
-    platform: z.string().optional(),
-    language: z.string().optional(),
-  }).optional(),
+  deviceInfo: z
+    .object({
+      userAgent: z.string().optional(),
+      platform: z.string().optional(),
+      language: z.string().optional(),
+    })
+    .optional(),
 });
 
 const updateNotificationSettingsSchema = z.object({
@@ -479,33 +481,31 @@ export const updateFcmToken = async (req: AuthRequest, res: Response) => {
 
     // 기존 토큰 확인
     const { data: existing } = await supabase
-      .from('user_push_tokens')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('fcm_token', fcmToken)
+      .from("user_push_tokens")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("fcm_token", fcmToken)
       .single();
 
     if (existing) {
       // 업데이트
       await supabase
-        .from('user_push_tokens')
+        .from("user_push_tokens")
         .update({
           is_active: true,
           device_info: deviceInfo,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', existing.id);
+        .eq("id", existing.id);
     } else {
       // 새로 추가
-      await supabase
-        .from('user_push_tokens')
-        .insert({
-          user_id: userId,
-          fcm_token: fcmToken,
-          device_type: deviceType || 'mobile',
-          device_info: deviceInfo,
-          is_active: true
-        });
+      await supabase.from("user_push_tokens").insert({
+        user_id: userId,
+        fcm_token: fcmToken,
+        device_type: deviceType || "mobile",
+        device_info: deviceInfo,
+        is_active: true,
+      });
     }
 
     res.json({
