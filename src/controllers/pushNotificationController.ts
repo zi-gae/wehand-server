@@ -79,6 +79,7 @@ export class PushNotificationController {
     try {
       const validatedData = sendNotificationSchema.parse(req.body);
 
+      console.log("Multiple users notification data:", validatedData);
       if (!validatedData.userIds || validatedData.userIds.length === 0) {
         return res.status(400).json({
           success: false,
