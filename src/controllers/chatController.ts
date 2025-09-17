@@ -153,8 +153,6 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
           .eq("type", "chat")
           .eq("action_data->>chatRoomId", room.id);
 
-        console.log("@@@unreadCount", unreadCount);
-
         return {
           id: room.id,
           name:

@@ -2008,45 +2008,121 @@ const swaggerDefinition = {
       },
 
       ChatRoomDetail: {
-        allOf: [
-          { $ref: "#/components/schemas/ChatRoom" },
-          {
+        type: "object",
+        required: ["id", "type", "created_at", "participants"],
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid",
+            description: "채팅방 ID",
+          },
+          name: {
+            type: "string",
+            example: "즐거운 주말 단식 채팅",
+            description: "채팅방 이름",
+            nullable: true,
+          },
+          type: {
+            type: "string",
+            enum: ["private", "match"],
+            example: "match",
+            description: "채팅방 유형",
+          },
+          created_at: {
+            type: "string",
+            format: "date-time",
+            description: "채팅방 생성일시",
+          },
+          match_id: {
+            type: "string",
+            format: "uuid",
+            description: "연결된 매치 ID",
+            nullable: true,
+          },
+          match: {
             type: "object",
             properties: {
-              participants: {
-                type: "array",
-                items: {
+              id: {
+                type: "string",
+                format: "uuid",
+              },
+              title: {
+                type: "string",
+                example: "즐거운 주말 단식",
+              },
+              match_date: {
+                type: "string",
+                format: "date-time",
+              },
+              host_id: {
+                type: "string",
+                format: "uuid",
+              },
+            },
+            description: "매치 채팅방인 경우 매치 정보",
+            nullable: true,
+          },
+          host: {
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                format: "uuid",
+              },
+              nickname: {
+                type: "string",
+                example: "HostPlayer",
+              },
+              profile_image_url: {
+                type: "string",
+                format: "uri",
+                nullable: true,
+              },
+            },
+            description: "매치 채팅방인 경우 호스트 정보",
+            nullable: true,
+          },
+          participants: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["user", "joined_at"],
+              properties: {
+                user: {
                   type: "object",
+                  required: ["id", "nickname"],
                   properties: {
-                    user: {
-                      type: "object",
-                      properties: {
-                        id: {
-                          type: "string",
-                          format: "uuid",
-                        },
-                        nickname: {
-                          type: "string",
-                          example: "TennisPlayer",
-                        },
-                        profile_image: {
-                          type: "string",
-                          format: "uri",
-                        },
-                      },
-                    },
-                    joined_at: {
+                    id: {
                       type: "string",
-                      format: "date-time",
-                      description: "채팅방 참가일시",
+                      format: "uuid",
+                    },
+                    nickname: {
+                      type: "string",
+                      example: "TennisPlayer",
+                    },
+                    profile_image_url: {
+                      type: "string",
+                      format: "uri",
+                      nullable: true,
                     },
                   },
                 },
-                description: "채팅방 참가자 목록",
+                joined_at: {
+                  type: "string",
+                  format: "date-time",
+                  description: "채팅방 참가일시",
+                },
+                role: {
+                  type: "string",
+                  example: "member",
+                  description: "참가자 역할",
+                  nullable: true,
+                },
               },
             },
+            description: "채팅방 참가자 목록",
           },
-        ],
+        },
       },
 
       CreateChatRoomRequest: {

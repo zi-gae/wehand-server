@@ -179,6 +179,7 @@ export class PushNotificationController {
         });
       }
 
+      console.log("Registering token for user:", userId, validatedData);
       const result = await pushNotificationService.registerDeviceToken(
         userId,
         validatedData.token,
