@@ -1278,8 +1278,7 @@ export const deleteChatRoom = async (req: AuthRequest, res: Response) => {
       .from("chat_rooms")
       .update({
         is_active: false,
-        deleted_at: new Date().toISOString(),
-        deleted_by: userId,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", chatRoomId);
 
