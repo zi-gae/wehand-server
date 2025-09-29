@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @swagger
- * /version-check:
+ * /api/version-check:
  *   get:
  *     summary: 앱 버전 체크
  *     description: 클라이언트 앱의 버전을 확인하고 업데이트 필요 여부를 반환합니다.
