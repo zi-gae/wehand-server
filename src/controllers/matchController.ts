@@ -33,7 +33,7 @@ export const matchController = {
   getMatches: asyncHandler(async (req: Request, res: Response) => {
     console.log("원본 쿼리 파라미터:", req.query);
 
-    // Express에서 regions[] 형식의 쿼리 파라미터 처리
+    // Express에서 regions[], courts[], venue_ids[] 형식의 쿼리 파라미터 처리
     const queryObj = { ...req.query };
 
     // regions[] 키가 있다면 regions 키로 변환
@@ -41,6 +41,20 @@ export const matchController = {
       const regionsValue = queryObj["regions[]"];
       queryObj.regions = regionsValue;
       delete queryObj["regions[]"];
+    }
+
+    // courts[] 키가 있다면 courts 키로 변환
+    if (queryObj["courts[]"] !== undefined) {
+      const courtsValue = queryObj["courts[]"];
+      queryObj.courts = courtsValue;
+      delete queryObj["courts[]"];
+    }
+
+    // venue_ids[] 키가 있다면 venue_ids 키로 변환
+    if (queryObj["venue_ids[]"] !== undefined) {
+      const venueIdsValue = queryObj["venue_ids[]"];
+      queryObj.venue_ids = venueIdsValue;
+      delete queryObj["venue_ids[]"];
     }
 
     console.log("쿼리 파라미터 변환:", queryObj);
@@ -66,6 +80,10 @@ export const matchController = {
       sort,
       user_lat,
       user_lng,
+      court,
+      courts, // 여러 코트 필터 추가
+      venue_id,
+      venue_ids, // venue ID 필터 추가
     } = filters;
 
     console.log("DEBUG - Received filters:", req.query);
@@ -153,6 +171,19 @@ export const matchController = {
       // matches 테이블 필드만 검색 (venues.name은 별도 처리 필요)
       query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
     }
+
+    // 단일 코트 필터 (하위 호환성)
+    if (court && !courts) {
+      query = query.ilike("court", `%${court}%`);
+    }
+
+    // Venue ID 필터
+    if (venue_ids && venue_ids.length > 0) {
+      query = query.in("venue_id", venue_ids);
+    } else if (venue_id) {
+      query = query.eq("venue_id", venue_id);
+    }
+
     // 지역 필터는 쿼리 생성 후 적용하지 않고, select 시점에 처리
 
     // 게임 타입 필터
@@ -216,8 +247,9 @@ export const matchController = {
       }
     }
 
-    // 페이징 적용 (regions 필터가 있을 때는 나중에 JavaScript에서 처리)
-    const shouldApplyPaginationLater = regions && regions.length > 0;
+    // 페이징 적용 (regions 또는 courts 필터가 있을 때는 나중에 JavaScript에서 처리)
+    const shouldApplyPaginationLater =
+      (regions && regions.length > 0) || (courts && courts.length > 0);
 
     if (!shouldApplyPaginationLater) {
       const offset = (page - 1) * limit;
@@ -231,6 +263,9 @@ export const matchController = {
       hasRegions: !!regions,
       regionsLength: regions ? regions.length : 0,
       hasRegion: !!region,
+      hasCourts: !!courts,
+      courtsLength: courts ? courts.length : 0,
+      hasCourt: !!court,
       matchesCount: matches ? matches.length : 0,
     });
 
@@ -249,10 +284,9 @@ export const matchController = {
     }
 
     let processedMatches = matches || [];
-
-    // regions 필터링 (JavaScript에서 후처리)
     let totalFilteredCount = processedMatches.length;
 
+    // regions 필터링 (JavaScript에서 후처리)
     if (regions && regions.length > 0) {
       const convertedRegions = regions.map(convertToOfficialRegionName);
       processedMatches = processedMatches.filter((match: any) => {
@@ -265,18 +299,43 @@ export const matchController = {
         );
       });
 
-      // 필터링 후 총 개수 업데이트
-      totalFilteredCount = processedMatches.length;
+      console.log("DEBUG - After regions filter:", {
+        originalCount: matches?.length || 0,
+        filteredCount: processedMatches.length,
+        regions: convertedRegions,
+      });
+    }
 
-      // JavaScript 레벨에서 페이지네이션 적용
+    // courts 필터링 (JavaScript에서 후처리)
+    if (courts && courts.length > 0) {
+      processedMatches = processedMatches.filter((match: any) => {
+        const matchCourt = match.court || "";
+
+        return courts.some(
+          (court) =>
+            matchCourt && matchCourt.toLowerCase().includes(court.toLowerCase())
+        );
+      });
+
+      console.log("DEBUG - After courts filter:", {
+        beforeFilterCount: processedMatches.length,
+        courts: courts,
+      });
+    }
+
+    // 필터링 후 총 개수 업데이트
+    totalFilteredCount = processedMatches.length;
+
+    // JavaScript 레벨에서 페이지네이션 적용 (regions 또는 courts 필터가 있는 경우)
+    if (shouldApplyPaginationLater) {
       const offset = (page - 1) * limit;
       processedMatches = processedMatches.slice(offset, offset + limit);
 
-      console.log("DEBUG - After regions filter:", {
-        originalCount: matches?.length || 0,
-        filteredCount: totalFilteredCount,
+      console.log("DEBUG - After pagination:", {
+        totalFilteredCount,
         afterPagination: processedMatches.length,
-        regions: convertedRegions,
+        page,
+        limit,
       });
     }
 
@@ -390,9 +449,10 @@ export const matchController = {
         };
       }) || [];
 
-    // 페이지네이션 계산 (regions 필터링이 적용된 경우 필터링된 개수 사용)
-    const finalCount =
-      regions && regions.length > 0 ? totalFilteredCount : count || 0;
+    // 페이지네이션 계산 (필터링이 적용된 경우 필터링된 개수 사용)
+    const finalCount = shouldApplyPaginationLater
+      ? totalFilteredCount
+      : count || 0;
     const pagination = createPagination(page, limit, finalCount);
 
     return ResponseHelper.successWithPagination(

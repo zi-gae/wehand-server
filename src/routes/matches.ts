@@ -39,6 +39,54 @@ const router = Router();
  *           array:
  *             value: ["서울 강남구", "서울 서초구"]
  *       - in: query
+ *         name: court
+ *         schema:
+ *           type: string
+ *         description: 단일 코트명 필터 (하위 호환성)
+ *         example: "1코트"
+ *       - in: query
+ *         name: courts
+ *         schema:
+ *           oneOf:
+ *             - type: string
+ *               description: 콤마로 구분된 코트명 리스트
+ *               example: "1코트,2코트,센터코트"
+ *             - type: array
+ *               items:
+ *                 type: string
+ *               description: 코트명 배열
+ *         description: 여러 코트명 필터 (OR 조건으로 검색, 대소문자 구분 없음)
+ *         examples:
+ *           string:
+ *             value: "1코트,2코트"
+ *           array:
+ *             value: ["1코트", "2코트", "센터코트"]
+ *       - in: query
+ *         name: venue_id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 단일 테니스장 ID 필터
+ *         example: "550e8400-e29b-41d4-a716-446655440000"
+ *       - in: query
+ *         name: venue_ids
+ *         schema:
+ *           oneOf:
+ *             - type: string
+ *               description: 콤마로 구분된 테니스장 ID 리스트
+ *               example: "550e8400-e29b-41d4-a716-446655440000,550e8400-e29b-41d4-a716-446655440001"
+ *             - type: array
+ *               items:
+ *                 type: string
+ *                 format: uuid
+ *               description: 테니스장 ID 배열
+ *         description: 여러 테니스장 ID 필터 (OR 조건으로 검색)
+ *         examples:
+ *           string:
+ *             value: "550e8400-e29b-41d4-a716-446655440000,550e8400-e29b-41d4-a716-446655440001"
+ *           array:
+ *             value: ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"]
+ *       - in: query
  *         name: game_type
  *         schema:
  *           type: string

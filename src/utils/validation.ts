@@ -143,6 +143,28 @@ export const matchFilterSchema = z.object({
       return [];
     }, z.array(z.string()))
     .optional(),
+  court: z.string().max(100, "코트명은 100자 이하여야 합니다").optional(), // 단일 코트 (하위 호환성)
+  courts: z
+    .preprocess((val) => {
+      // 배열인 경우 (req.query에서 courts[]로 왔을 때)
+      if (Array.isArray(val)) return val;
+      // 문자열인 경우 쉼표로 구분하여 배열로 변환
+      if (typeof val === "string") return val.split(",");
+      // 처리할 수 없는 형식일 경우 빈 배열 반환
+      return [];
+    }, z.array(z.string()))
+    .optional(), // 여러 코트 필터
+  venue_id: z.string().uuid().optional(), // 단일 venue ID 필터
+  venue_ids: z
+    .preprocess((val) => {
+      // 배열인 경우 (req.query에서 venue_ids[]로 왔을 때)
+      if (Array.isArray(val)) return val;
+      // 문자열인 경우 쉼표로 구분하여 배열로 변환
+      if (typeof val === "string") return val.split(",");
+      // 처리할 수 없는 형식일 경우 빈 배열 반환
+      return [];
+    }, z.array(z.string().uuid()))
+    .optional(), // 여러 venue ID 필터
   game_type: z
     .enum(["singles", "mens_doubles", "womens_doubles", "mixed_doubles"])
     .optional(),
