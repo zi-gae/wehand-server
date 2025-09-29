@@ -2330,6 +2330,10 @@ const swaggerDefinition = {
       name: "Blocks",
       description: "차단 API - 사용자 차단 및 차단 관리",
     },
+    {
+      name: "Version",
+      description: "버전 API - 앱 버전 체크 및 업데이트 정보",
+    },
   ],
 };
 

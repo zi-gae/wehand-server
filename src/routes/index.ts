@@ -15,6 +15,7 @@ import reviewRoutes from "./reviewRoutes";
 import logRoutes from "./logs";
 import pushNotificationRoutes from "./pushNotifications";
 import blockRoutes from "./blocks";
+import versionRoutes from "./version";
 
 const router = Router();
 
@@ -67,5 +68,6 @@ router.use("/chat", chatRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/blocks", blockRoutes);
 router.use("/logs", logRoutes);
+router.use("/version-check", versionRoutes);
 
 export default router;
