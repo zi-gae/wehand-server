@@ -2514,18 +2514,18 @@ const swaggerDefinition = {
             example: "안녕하세요! 매치 잘 부탁드립니다.",
             description: "메시지 내용",
           },
-          message_type: {
+          messageType: {
             type: "string",
             enum: ["text", "image", "system"],
             example: "text",
             description: "메시지 유형",
           },
-          created_at: {
+          createdAt: {
             type: "string",
             format: "date-time",
             description: "메시지 생성일시",
           },
-          reply_to: {
+          replyTo: {
             type: "string",
             format: "uuid",
             description: "답글 대상 메시지 ID",
@@ -2541,14 +2541,14 @@ const swaggerDefinition = {
                 type: "string",
                 example: "TennisPlayer",
               },
-              profile_image_url: {
+              profileImageUrl: {
                 type: "string",
                 format: "uri",
               },
             },
             description: "메시지 발신자 정보",
           },
-          reply_message: {
+          replyMessage: {
             type: "object",
             properties: {
               id: {
@@ -2564,21 +2564,21 @@ const swaggerDefinition = {
                   {
                     type: "object",
                     properties: {
-                      participant_id: {
+                      participantId: {
                         type: "string",
                         example: "123e4567-e89b-12d3-a456-426614174001",
                       },
-                      participant_name: { type: "string", example: "김테니스" },
+                      participantName: { type: "string", example: "김테니스" },
                       type: {
                         type: "string",
                         enum: ["approve_request", "cancel_approval"],
                         example: "approve_request",
                       },
                     },
-                    required: ["participant_id", "participant_name", "type"],
+                    required: ["participantId", "participantName", "type"],
                     example: {
-                      participant_id: "123e4567-e89b-12d3-a456-426614174001",
-                      participant_name: "김테니스",
+                      participantId: "123e4567-e89b-12d3-a456-426614174001",
+                      participantName: "김테니스",
                       type: "approve_request",
                     },
                   },
