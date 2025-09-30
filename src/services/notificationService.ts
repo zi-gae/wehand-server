@@ -23,7 +23,7 @@ export class NotificationService {
         user_id: authorId,
         type: "community",
         title: "게시글에 좋아요를 받았습니다",
-        message: `${likerNickname}님이 "${postTitle}" 게시글에 좋아요를 눌렀습니다.`,
+        message: `"${postTitle}" 게시글에 좋아요를 눌렀습니다.`,
         post_id: postId,
         action_data: {
           type: "navigate",

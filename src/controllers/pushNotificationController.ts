@@ -324,6 +324,48 @@ export class PushNotificationController {
     }
   }
 
+  // 공지사항 알림 전송
+  async sendAnnouncementNotification(title: string) {
+    try {
+      // 모든 활성 사용자 조회
+      const { data: users, error } = await supabase
+        .from("users")
+        .select("id")
+        .eq("is_active", true)
+        .eq("notification_enabled", true); // 알림 활성화된 사용자만
+
+      if (error || !users) {
+        console.error("사용자 조회 실패:", error);
+        return;
+      }
+
+      const userIds = users.map((user) => user.id);
+
+      if (userIds.length === 0) {
+        console.log("알림을 받을 사용자가 없습니다.");
+        return;
+      }
+
+      // 배치로 알림 전송 (100명씩)
+      const batchSize = 100;
+      for (let i = 0; i < userIds.length; i += batchSize) {
+        const batch = userIds.slice(i, i + batchSize);
+
+        await pushNotificationService.sendToMultipleUsers(batch, {
+          title: "📢 새로운 공지사항이 등록되었습니다",
+          body: `${title} - 지금 확인해보세요!`,
+          type: "announcement_post",
+          priority: "high",
+          channel: "featured",
+        });
+      }
+
+      console.log(`인기 게시글 알림 전송 완료: ${userIds.length}명`);
+    } catch (error) {
+      console.error("인기 게시글 알림 전송 실패:", error);
+    }
+  }
+
   // 인기 게시글 알림 전송
   async sendFeaturedPostNotification(post: any) {
     try {

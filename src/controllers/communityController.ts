@@ -9,6 +9,7 @@ import {
   FeaturedPost,
 } from "../services/featuredPostService";
 import { z } from "zod";
+import { pushNotificationController } from "./pushNotificationController";
 
 // 하위호환성을 위한 데이터 변환 함수들
 const addCamelCaseFields = (post: any) => {
@@ -364,6 +365,11 @@ export const createPost = async (req: AuthRequest, res: Response) => {
         true,
         error
       );
+    }
+
+    if (category === "announcement") {
+      // 공지사항 작성시 모든 사용자에게 푸시 알림 발송
+      pushNotificationController.sendAnnouncementNotification(title);
     }
 
     res.status(201).json({

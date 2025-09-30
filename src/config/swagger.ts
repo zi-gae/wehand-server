@@ -2085,7 +2085,7 @@ const swaggerDefinition = {
             description: "차단 사유 코드",
             example: "harassment",
           },
-          reason_detail: {
+          reasonDetail: {
             type: "string",
             description: "상세 차단 사유",
             example: "반복적인 욕설 및 괴롭힘",
@@ -2131,7 +2131,7 @@ const swaggerDefinition = {
             description: "차단 사유 코드 (선택)",
             example: "harassment",
           },
-          reason_detail: {
+          reasonDetail: {
             type: "string",
             description: "상세 차단 사유 (선택)",
             example: "반복적인 욕설 및 괴롭힘",
