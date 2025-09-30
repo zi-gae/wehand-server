@@ -18,7 +18,6 @@ const addCamelCaseFields = (post: any) => {
     likes_count: post.likes,
     likesCount: post.likes,
     commentsCount: post.comments_count,
-    views_count: post.views || 0,
     viewsCount: post.views || 0,
     createdAt: post.created_at,
     updatedAt: post.updated_at,

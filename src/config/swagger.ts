@@ -1202,30 +1202,15 @@ const swaggerDefinition = {
             example: 15,
             description: "좋아요 수",
           },
-          likes_count: {
-            type: "integer",
-            example: 15,
-            description: "좋아요 수 (camelCase 호환)",
-          },
-          comments_count: {
-            type: "integer",
-            example: 8,
-            description: "댓글 수",
-          },
           commentsCount: {
             type: "integer",
             example: 8,
-            description: "댓글 수 (camelCase 호환)",
+            description: "댓글 수",
           },
           views: {
             type: "integer",
             example: 127,
             description: "조회수",
-          },
-          views_count: {
-            type: "integer",
-            example: 127,
-            description: "조회수 (camelCase 호환)",
           },
           created_at: {
             type: "string",
