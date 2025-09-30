@@ -2305,7 +2305,7 @@ const swaggerDefinition = {
                 type: "string",
                 example: "HostPlayer",
               },
-              profile_image_url: {
+              profileImageUrl: {
                 type: "string",
                 format: "uri",
               },
@@ -2323,10 +2323,6 @@ const swaggerDefinition = {
                 type: "string",
                 example: "TennisPlayer",
               },
-              profile_image_url: {
-                type: "string",
-                format: "uri",
-              },
               profileImageUrl: {
                 type: "string",
                 format: "uri",
@@ -2335,15 +2331,15 @@ const swaggerDefinition = {
             },
             description: "1:1 채팅방인 경우 상대방 정보 (camelCase 호환)",
           },
-          last_message: {
+          lastMessage: {
             $ref: "#/components/schemas/ChatMessage",
           },
-          unread_count: {
+          unreadCount: {
             type: "integer",
             example: 3,
             description: "읽지 않은 메시지 수",
           },
-          updated_at: {
+          updatedAt: {
             type: "string",
             format: "date-time",
             description: "마지막 업데이트 일시",

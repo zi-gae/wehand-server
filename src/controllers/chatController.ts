@@ -1,12 +1,14 @@
-import { Request, Response } from "express";
-import { AuthRequest } from "../types/auth";
-import { supabase } from "../lib/supabase";
-import { ApiError } from "../utils/errors";
-import { logger } from "../config/logger";
+import { Response } from "express";
 import { z } from "zod";
 import { io } from "../app";
+import { logger } from "../config/logger";
+import { supabase } from "../lib/supabase";
 import { createChatMessageNotifications } from "../services/chatNotificationService";
+import { AuthRequest } from "../types/auth";
+import { ApiError } from "../utils/errors";
 import { safeJsonParse } from "../utils/safeJsonParse";
+import { snakeToCamel } from "../utils/snakeToCamel";
+import { KeysToCamelCase } from "../utils/types";
 
 // Validation schemas
 const sendMessageSchema = z.object({
@@ -159,11 +161,16 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
             room.type === "private" ? otherParticipant?.nickname : room.name,
           type: room.type,
           match: matchInfo,
-          host: hostInfo, // 호스트 정보 추가
-          otherParticipant,
+          host: { ...hostInfo, profileImageUrl: hostInfo?.profile_image_url }, // 호스트 정보 추가
+          otherParticipant: {
+            ...otherParticipant,
+            profileImageUrl: otherParticipant?.profile_image_url,
+          },
           lastMessage: lastMessage
             ? {
                 ...lastMessage,
+                messageType: lastMessage.message_type,
+                senderId: lastMessage.sender_id,
                 content: safeJsonParse(lastMessage.content),
                 sender: senderInfo,
               }
@@ -188,9 +195,11 @@ export const getChatRooms = async (req: AuthRequest, res: Response) => {
 
     const totalPages = Math.ceil((count || 0) / Number(limit));
 
+    const data = snakeToCamel<KeysToCamelCase<typeof validRooms>>(validRooms);
+
     res.json({
       success: true,
-      data: validRooms,
+      data: data,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -461,14 +470,19 @@ export const getChatRoom = async (req: AuthRequest, res: Response) => {
       .eq("is_active", true)
       .order("joined_at", { ascending: true });
 
+    const responseData = {
+      ...chatRoom,
+      match: matchInfo,
+      host: hostInfo,
+      participants: participants || [],
+    };
+
+    const data =
+      snakeToCamel<KeysToCamelCase<typeof responseData>>(responseData);
+
     res.json({
       success: true,
-      data: {
-        ...chatRoom,
-        match: matchInfo,
-        host: hostInfo,
-        participants: participants || [],
-      },
+      data,
     });
   } catch (error: any) {
     logger.error("채팅방 정보 조회 실패:", error);
@@ -553,9 +567,12 @@ export const getAllMessages = async (req: AuthRequest, res: Response) => {
       content: safeJsonParse(message.content),
     }));
 
+    const data =
+      snakeToCamel<KeysToCamelCase<typeof responseMessages>>(responseMessages);
+
     res.json({
       success: true,
-      data: responseMessages || [],
+      data: data || [],
     });
   } catch (error: any) {
     logger.error("메시지 조회 실패:", error);
@@ -661,13 +678,16 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
     }
 
     // 메시지를 시간순으로 정렬 (오래된 것부터)
+
     const sortedMessages = (messages || []).reverse();
+    const data =
+      snakeToCamel<KeysToCamelCase<typeof sortedMessages>>(sortedMessages);
 
     const totalPages = Math.ceil((count || 0) / Number(limit));
 
     res.json({
       success: true,
-      data: sortedMessages,
+      data,
       pagination: {
         page: Number(page),
         limit: Number(limit),
