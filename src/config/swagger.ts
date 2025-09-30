@@ -1237,6 +1237,128 @@ const swaggerDefinition = {
         },
       },
 
+      FeaturedPost: {
+        type: "object",
+        required: ["id", "title", "content", "category", "created_at", "score"],
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid",
+            description: "게시글 ID",
+          },
+          title: {
+            type: "string",
+            example: "테니스 입문자를 위한 팁",
+            description: "게시글 제목",
+          },
+          content: {
+            type: "string",
+            example:
+              "테니스를 처음 시작하는 분들에게 도움이 될 만한 팁들을 공유합니다.",
+            description: "게시글 내용",
+          },
+          category: {
+            type: "string",
+            enum: [
+              "free",
+              "tips",
+              "equipment",
+              "match",
+              "question",
+              "announcement",
+            ],
+            example: "tips",
+            description: "게시글 카테고리",
+          },
+          images: {
+            type: "array",
+            items: {
+              type: "string",
+              format: "uri",
+            },
+            description: "첨부 이미지 URL 목록",
+          },
+          likes: {
+            type: "integer",
+            example: 25,
+            description: "좋아요 수",
+          },
+          likesCount: {
+            type: "integer",
+            example: 25,
+            description: "좋아요 수 (camelCase 호환)",
+          },
+          commentsCount: {
+            type: "integer",
+            example: 12,
+            description: "댓글 수",
+          },
+          comments_count: {
+            type: "integer",
+            example: 12,
+            description: "댓글 수 (snake_case 호환)",
+          },
+          viewsCount: {
+            type: "integer",
+            example: 150,
+            description: "조회수",
+          },
+          views: {
+            type: "integer",
+            example: 150,
+            description: "조회수 (snake_case 호환)",
+          },
+          score: {
+            type: "number",
+            format: "float",
+            example: 85.5,
+            description: "인기 점수 (좋아요, 댓글, 조회수 기반 계산)",
+          },
+          created_at: {
+            type: "string",
+            format: "date-time",
+            description: "생성일시",
+          },
+          createdAt: {
+            type: "string",
+            format: "date-time",
+            description: "생성일시 (camelCase 호환)",
+          },
+          updated_at: {
+            type: "string",
+            format: "date-time",
+            description: "수정일시",
+          },
+          updatedAt: {
+            type: "string",
+            format: "date-time",
+            description: "수정일시 (camelCase 호환)",
+          },
+          author: {
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                format: "uuid",
+              },
+              nickname: {
+                type: "string",
+                example: "TennisLover",
+              },
+              profile_image_url: {
+                type: "string",
+                format: "uri",
+              },
+              profileImageUrl: {
+                type: "string",
+                format: "uri",
+                description: "프로필 이미지 URL (camelCase 호환)",
+              },
+            },
+          },
+        },
+      },
+
       PostDetail: {
         allOf: [
           { $ref: "#/components/schemas/Post" },

@@ -110,6 +110,11 @@ router.get("/posts/featured", communityController.getFeaturedPosts);
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Post'
+ *                 featuredPosts:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/FeaturedPost'
+ *                   description: 인기 게시글 목록 (첫 페이지이고 필터가 없는 경우에만 포함)
  *                 pagination:
  *                   $ref: '#/components/schemas/PaginationInfo'
  */

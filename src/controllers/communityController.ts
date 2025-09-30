@@ -105,7 +105,6 @@ export const getPosts = async (req: Request, res: Response) => {
       sort = "latest",
       page = "1",
       limit = "10",
-      includeFeatured = "true", // 인기 게시글 포함 여부
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
@@ -188,14 +187,8 @@ export const getPosts = async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil((totalCount || 0) / Number(limit));
 
-    // 첫 페이지이고 includeFeatured가 true인 경우 인기 게시글 조회
     let featuredPosts: FeaturedPost[] = [];
-    if (
-      Number(page) === 1 &&
-      includeFeatured === "true" &&
-      !search &&
-      !category
-    ) {
+    if (Number(page) === 1 && !search && !category) {
       featuredPosts = await FeaturedPostService.getCurrentFeaturedPosts();
     }
 

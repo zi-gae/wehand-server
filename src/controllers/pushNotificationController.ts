@@ -353,14 +353,13 @@ export class PushNotificationController {
 
         await pushNotificationService.sendToMultipleUsers(batch, {
           title: "🔥 오늘의 인기 게시글",
-          body: `"${post.title}" - ${post.author.nickname}님의 글이 인기 게시글로 선정되었습니다!`,
+          body: `오늘의 인기 게시글을 확인해보세요`,
           type: "featured_post",
           data: {
             postId: post.id,
             categoryId: post.category,
             authorId: post.author.id,
           },
-          imageUrl: post.attachments?.[0]?.url, // 첫 번째 이미지가 있으면 포함
           priority: "high",
           channel: "featured",
         });
