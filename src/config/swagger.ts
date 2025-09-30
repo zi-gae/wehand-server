@@ -2548,54 +2548,6 @@ const swaggerDefinition = {
             },
             description: "메시지 발신자 정보",
           },
-          replyMessage: {
-            type: "object",
-            properties: {
-              id: {
-                type: "string",
-                format: "uuid",
-              },
-              content: {
-                oneOf: [
-                  {
-                    type: "string",
-                    example: "네, 저도 잘 부탁드립니다!",
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      participantId: {
-                        type: "string",
-                        example: "123e4567-e89b-12d3-a456-426614174001",
-                      },
-                      participantName: { type: "string", example: "김테니스" },
-                      type: {
-                        type: "string",
-                        enum: ["approve_request", "cancel_approval"],
-                        example: "approve_request",
-                      },
-                    },
-                    required: ["participantId", "participantName", "type"],
-                    example: {
-                      participantId: "123e4567-e89b-12d3-a456-426614174001",
-                      participantName: "김테니스",
-                      type: "approve_request",
-                    },
-                  },
-                ],
-              },
-              sender: {
-                type: "object",
-                properties: {
-                  nickname: {
-                    type: "string",
-                    example: "TennisLover",
-                  },
-                },
-              },
-            },
-            description: "답글 대상 메시지 정보",
-          },
         },
       },
 
