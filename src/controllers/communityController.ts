@@ -120,6 +120,7 @@ export const getPosts = async (req: Request, res: Response) => {
         category,
         attachments,
         likes,
+        views,
         comments_count,
         created_at,
         updated_at,
