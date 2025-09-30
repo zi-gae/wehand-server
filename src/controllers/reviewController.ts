@@ -5,6 +5,21 @@ import { ApiError, asyncHandler } from "../middleware/errorHandler";
 import { z } from "zod";
 import { logger } from "../config/logger";
 
+// 하위호환성을 위한 데이터 변환 함수
+const addReviewCamelCaseFields = (match: any) => {
+  return {
+    ...match,
+    // snake_case -> camelCase 매핑 추가
+    matchDate: match.match_date,
+    gameType: match.game_type,
+    participants:
+      match.participants?.map((p: any) => ({
+        ...p,
+        hasReviewed: p.has_reviewed,
+      })) || [],
+  };
+};
+
 // Request 타입 확장
 interface AuthRequest extends Request {
   user?: {
@@ -136,7 +151,10 @@ export const reviewController = {
       // null 값 제거
       const filteredMatches = reviewableMatches.filter((m) => m !== null);
 
-      return ResponseHelper.success(res, filteredMatches);
+      // 하위호환성을 위해 camelCase 필드 추가
+      const transformedMatches = filteredMatches.map(addReviewCamelCaseFields);
+
+      return ResponseHelper.success(res, transformedMatches);
     }
   ),
 

@@ -791,3 +791,20 @@ CREATE TRIGGER post_likes_engagement_trigger
 CREATE TRIGGER comments_engagement_trigger
     AFTER INSERT OR UPDATE OR DELETE ON comments
     FOR EACH ROW EXECUTE FUNCTION update_post_engagement();
+
+
+    -- featured_posts 테이블 생성
+CREATE TABLE featured_posts (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  featured_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  featured_type VARCHAR(50) DEFAULT 'daily', -- daily, weekly, special 등
+  metrics JSONB, -- 선정 당시의 지표 (좋아요, 댓글, 조회수 등)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(post_id, featured_type)
+);
+
+-- posts 테이블에 인기 게시글 관련 컬럼 추가
+ALTER TABLE posts ADD COLUMN is_featured BOOLEAN DEFAULT FALSE;
+ALTER TABLE posts ADD COLUMN featured_until TIMESTAMP WITH TIME ZONE;

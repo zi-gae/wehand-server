@@ -33,11 +33,18 @@ import { swaggerSpec } from "./config/swagger";
 // 라우터
 import routes from "./routes";
 import { authenticateSocket } from "./middleware/auth";
+import { startFeaturedPostJob } from "./jobs/featuredPostJob";
 
 dotenv.config();
 
 // Firebase Admin SDK 초기화
 // import './config/firebase';
+
+// 크론잡 시작
+if (process.env.NODE_ENV === "production") {
+  startFeaturedPostJob();
+  logger.info("인기 게시글 선정 크론잡이 시작되었습니다");
+}
 
 const app = express();
 const server = createServer(app);
@@ -273,6 +280,15 @@ server.listen(PORT, () => {
   logger.info(`Database: Supabase`);
   logger.info(`📚 API 문서: http://localhost:${PORT}/api-docs`);
   logger.info(`🔗 WebSocket: ws://localhost:${PORT}`);
+
+  // 개발 환경에서도 크론잡 테스트 가능
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.ENABLE_CRON_JOBS === "true"
+  ) {
+    startFeaturedPostJob();
+    logger.info("[DEV] 인기 게시글 선정 크론잡이 시작되었습니다");
+  }
 });
 
 // Graceful shutdown

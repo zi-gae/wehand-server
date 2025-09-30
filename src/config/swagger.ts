@@ -194,11 +194,17 @@ const swaggerDefinition = {
             description: "자기소개",
             maxLength: 500,
           },
-          profileImageUrl: {
+          profile_image_url: {
             type: "string",
             format: "uri",
             example: "https://example.com/profile.jpg",
             description: "프로필 이미지 URL",
+          },
+          profileImageUrl: {
+            type: "string",
+            format: "uri",
+            example: "https://example.com/profile.jpg",
+            description: "프로필 이미지 URL (camelCase 호환)",
           },
           gender: {
             type: "string",
@@ -214,45 +220,85 @@ const swaggerDefinition = {
             example: 4.0,
             description: "NTRP 레벨 (1.0-7.0)",
           },
-          experienceYears: {
+          experience_years: {
             type: "integer",
             minimum: 0,
             maximum: 50,
             example: 5,
             description: "테니스 구력 (년)",
           },
-          favoriteStyle: {
+          experienceYears: {
+            type: "integer",
+            minimum: 0,
+            maximum: 50,
+            example: 5,
+            description: "테니스 구력 (camelCase 호환)",
+          },
+          favorite_style: {
             type: "string",
             example: "공격적 베이스라인",
             description: "선호하는 플레이 스타일",
           },
-          reviewNtrp: {
+          favoriteStyle: {
+            type: "string",
+            example: "공격적 베이스라인",
+            description: "선호하는 플레이 스타일 (camelCase 호환)",
+          },
+          review_ntrp: {
             type: "number",
             format: "float",
             example: 4.2,
             description: "리뷰 기반 평균 NTRP",
           },
-          positiveReviews: {
+          reviewNtrp: {
+            type: "number",
+            format: "float",
+            example: 4.2,
+            description: "리뷰 기반 평균 NTRP (camelCase 호환)",
+          },
+          positive_reviews: {
             type: "integer",
             example: 9,
             description: "긍정적 리뷰 수",
           },
-          negativeReviews: {
+          positiveReviews: {
+            type: "integer",
+            example: 9,
+            description: "긍정적 리뷰 수 (camelCase 호환)",
+          },
+          negative_reviews: {
             type: "integer",
             example: 3,
             description: "부정적 리뷰 수",
           },
-          createdAt: {
+          negativeReviews: {
+            type: "integer",
+            example: 3,
+            description: "부정적 리뷰 수 (camelCase 호환)",
+          },
+          created_at: {
             type: "string",
             format: "date-time",
             example: "2024-01-15T09:00:00Z",
             description: "계정 생성일시",
           },
-          updatedAt: {
+          createdAt: {
+            type: "string",
+            format: "date-time",
+            example: "2024-01-15T09:00:00Z",
+            description: "계정 생성일시 (camelCase 호환)",
+          },
+          updated_at: {
             type: "string",
             format: "date-time",
             example: "2024-01-20T14:30:00Z",
             description: "마지막 수정일시",
+          },
+          updatedAt: {
+            type: "string",
+            format: "date-time",
+            example: "2024-01-20T14:30:00Z",
+            description: "마지막 수정일시 (camelCase 호환)",
           },
         },
       },
@@ -265,12 +311,17 @@ const swaggerDefinition = {
           },
           stats: {
             type: "object",
-            required: ["totalMatches", "wins", "losses", "winRate"],
+            required: ["total_matches", "wins", "losses", "win_rate"],
             properties: {
-              totalMatches: {
+              total_matches: {
                 type: "integer",
                 example: 47,
                 description: "총 경기 수",
+              },
+              totalMatches: {
+                type: "integer",
+                example: 47,
+                description: "총 경기 수 (camelCase 호환)",
               },
               wins: {
                 type: "integer",
@@ -282,10 +333,15 @@ const swaggerDefinition = {
                 example: 15,
                 description: "패배 수",
               },
-              winRate: {
+              win_rate: {
                 type: "number",
                 example: 68,
                 description: "승률 (%)",
+              },
+              winRate: {
+                type: "number",
+                example: 68,
+                description: "승률 (camelCase 호환)",
               },
               ranking: {
                 type: "integer",
@@ -297,27 +353,49 @@ const swaggerDefinition = {
           reviews: {
             type: "object",
             properties: {
-              totalReviews: {
+              total_reviews: {
                 type: "integer",
                 example: 23,
                 description: "받은 리뷰 총 개수",
               },
-              totalRatingSum: {
+              totalReviews: {
+                type: "integer",
+                example: 23,
+                description: "받은 리뷰 총 개수 (camelCase 호환)",
+              },
+              total_rating_sum: {
                 type: "integer",
                 example: 95,
                 description: "받은 모든 평점의 합계",
               },
-              avgNtrp: {
+              totalRatingSum: {
+                type: "integer",
+                example: 95,
+                description: "받은 모든 평점의 합계 (camelCase 호환)",
+              },
+              avg_ntrp: {
                 type: "number",
                 format: "float",
                 example: 4.2,
                 description: "리뷰에서 평가받은 NTRP 평균값 (소수점 1자리)",
               },
-              avgRating: {
+              avgNtrp: {
+                type: "number",
+                format: "float",
+                example: 4.2,
+                description: "리뷰에서 평가받은 NTRP 평균값 (camelCase 호환)",
+              },
+              avg_rating: {
                 type: "number",
                 format: "float",
                 example: 4.1,
                 description: "평균 평점 (소수점 1자리)",
+              },
+              avgRating: {
+                type: "number",
+                format: "float",
+                example: 4.1,
+                description: "평균 평점 (camelCase 호환)",
               },
               comments: {
                 type: "array",
@@ -332,10 +410,15 @@ const swaggerDefinition = {
                       type: "string",
                       description: "리뷰 작성자 닉네임",
                     },
-                    createdAt: {
+                    created_at: {
                       type: "string",
                       format: "date-time",
                       description: "리뷰 작성일시",
+                    },
+                    createdAt: {
+                      type: "string",
+                      format: "date-time",
+                      description: "리뷰 작성일시 (camelCase 호환)",
                     },
                   },
                 },
@@ -343,12 +426,12 @@ const swaggerDefinition = {
                   {
                     comment: "정말 좋은 매치였습니다!",
                     nickname: "tennis_lover",
-                    createdAt: "2024-01-20T14:30:00Z",
+                    created_at: "2024-01-20T14:30:00Z",
                   },
                   {
                     comment: "실력도 좋고 매너도 훌륭해요",
                     nickname: "match_master",
-                    createdAt: "2024-01-19T10:15:00Z",
+                    created_at: "2024-01-19T10:15:00Z",
                   },
                 ],
                 description: "받은 리뷰의 코멘트 목록",
@@ -369,9 +452,9 @@ const swaggerDefinition = {
           "location",
           "court",
           "date",
-          "startTime",
-          "endTime",
-          "gameType",
+          "start_time",
+          "end_time",
+          "game_type",
           "status",
         ],
         properties: {
@@ -406,28 +489,46 @@ const swaggerDefinition = {
             example: "01/15",
             description: "경기 날짜 (MM/DD 형식)",
           },
-          startTime: {
+          start_time: {
             type: "string",
             pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
             example: "14:00",
             description: "시작 시간 (HH:MM)",
           },
-          endTime: {
+          startTime: {
+            type: "string",
+            pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            example: "14:00",
+            description: "시작 시간 (camelCase 호환)",
+          },
+          end_time: {
             type: "string",
             pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
             example: "16:00",
             description: "종료 시간 (HH:MM)",
+          },
+          endTime: {
+            type: "string",
+            pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            example: "16:00",
+            description: "종료 시간 (camelCase 호환)",
           },
           participants: {
             type: "string",
             example: "2/4",
             description: "참가자 현황 (현재/최대)",
           },
-          gameType: {
+          game_type: {
             type: "string",
             enum: ["단식", "남복", "여복", "혼복"],
             example: "단식",
             description: "경기 유형",
+          },
+          gameType: {
+            type: "string",
+            enum: ["단식", "남복", "여복", "혼복"],
+            example: "단식",
+            description: "경기 유형 (camelCase 호환)",
           },
           level: {
             type: "string",
@@ -451,31 +552,57 @@ const swaggerDefinition = {
             description:
               "매치 상태 (recruiting: 모집중, full: 마감, confirmed: 확정, completed: 완료, cancelled: 취소)",
           },
-          hostName: {
+          host_name: {
             type: "string",
             example: "김테니스",
             description: "호스트 이름",
           },
-          hostId: {
+          hostName: {
+            type: "string",
+            example: "김테니스",
+            description: "호스트 이름 (camelCase 호환)",
+          },
+          host_id: {
             type: "string",
             format: "uuid",
             example: "550e8400-e29b-41d4-a716-446655440000",
             description: "호스트 사용자 ID",
           },
-          hostNtrp: {
+          hostId: {
+            type: "string",
+            format: "uuid",
+            example: "550e8400-e29b-41d4-a716-446655440000",
+            description: "호스트 사용자 ID (camelCase 호환)",
+          },
+          host_ntrp: {
             type: "string",
             example: "4.0",
             description: "호스트 NTRP 레벨",
           },
-          hostNickname: {
+          hostNtrp: {
+            type: "string",
+            example: "4.0",
+            description: "호스트 NTRP 레벨 (camelCase 호환)",
+          },
+          host_nickname: {
             type: "string",
             example: "테니스왕",
             description: "호스트 닉네임",
           },
-          hostExperience: {
+          hostNickname: {
+            type: "string",
+            example: "테니스왕",
+            description: "호스트 닉네임 (camelCase 호환)",
+          },
+          host_experience: {
             type: "string",
             example: "3년",
             description: "호스트 구력",
+          },
+          hostExperience: {
+            type: "string",
+            example: "3년",
+            description: "호스트 구력 (camelCase 호환)",
           },
           description: {
             type: "string",
@@ -517,6 +644,50 @@ const swaggerDefinition = {
             example: ["샤워실", "락커", "매점"],
             description: "편의시설 목록",
           },
+          confirmed_participants: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                  description: "참가자 ID",
+                },
+                name: {
+                  type: "string",
+                  example: "김테니스",
+                  description: "참가자 이름",
+                },
+                nickname: {
+                  type: "string",
+                  example: "테니스왕",
+                  description: "참가자 닉네임",
+                },
+                ntrp: {
+                  type: "string",
+                  example: "4.0",
+                  description: "참가자 NTRP 레벨",
+                },
+                experience: {
+                  type: "string",
+                  example: "3년",
+                  description: "참가자 구력",
+                },
+                is_host: {
+                  type: "boolean",
+                  example: false,
+                  description: "호스트 여부",
+                },
+                isHost: {
+                  type: "boolean",
+                  example: false,
+                  description: "호스트 여부 (camelCase 호환)",
+                },
+              },
+            },
+            description: "확정된 참가자 목록",
+          },
           confirmedParticipants: {
             type: "array",
             items: {
@@ -547,14 +718,19 @@ const swaggerDefinition = {
                   example: "3년",
                   description: "참가자 구력",
                 },
-                isHost: {
+                is_host: {
                   type: "boolean",
                   example: false,
                   description: "호스트 여부",
                 },
+                isHost: {
+                  type: "boolean",
+                  example: false,
+                  description: "호스트 여부 (camelCase 호환)",
+                },
               },
             },
-            description: "확정된 참가자 목록",
+            description: "확정된 참가자 목록 (camelCase 호환)",
           },
         },
       },
@@ -893,10 +1069,15 @@ const swaggerDefinition = {
             example: ["주차장", "샤워실", "락커"],
             description: "편의시설 목록",
           },
-          priceRange: {
+          price_range: {
             type: "string",
             example: "15,000-25,000원",
             description: "가격대 정보",
+          },
+          priceRange: {
+            type: "string",
+            example: "15,000-25,000원",
+            description: "가격대 정보 (camelCase 호환)",
           },
           phone: {
             type: "string",
@@ -908,6 +1089,7 @@ const swaggerDefinition = {
             format: "uri",
             description: "웹사이트 URL",
           },
+
           operatingHours: {
             type: "object",
             additionalProperties: {
@@ -917,7 +1099,7 @@ const swaggerDefinition = {
               monday: "06:00-22:00",
               tuesday: "06:00-22:00",
             },
-            description: "운영 시간",
+            description: "운영 시간 (camelCase 호환)",
           },
           distance: {
             type: "string",
@@ -954,12 +1136,19 @@ const swaggerDefinition = {
               },
             },
           },
-          upcomingMatches: {
+          upcoming_matches: {
             type: "array",
             items: {
               $ref: "#/components/schemas/Match",
             },
             description: "다가오는 매치 목록",
+          },
+          upcomingMatches: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/Match",
+            },
+            description: "다가오는 매치 목록 (camelCase 호환)",
           },
         },
       },
@@ -1008,20 +1197,35 @@ const swaggerDefinition = {
             },
             description: "첨부 이미지 URL 목록",
           },
-          likes_count: {
+          likes: {
             type: "integer",
             example: 15,
             description: "좋아요 수",
+          },
+          likes_count: {
+            type: "integer",
+            example: 15,
+            description: "좋아요 수 (camelCase 호환)",
           },
           comments_count: {
             type: "integer",
             example: 8,
             description: "댓글 수",
           },
-          views_count: {
+          commentsCount: {
+            type: "integer",
+            example: 8,
+            description: "댓글 수 (camelCase 호환)",
+          },
+          views: {
             type: "integer",
             example: 127,
             description: "조회수",
+          },
+          views_count: {
+            type: "integer",
+            example: 127,
+            description: "조회수 (camelCase 호환)",
           },
           created_at: {
             type: "string",
@@ -1150,10 +1354,15 @@ const swaggerDefinition = {
             example: "좋은 정보 감사합니다!",
             description: "댓글 내용",
           },
-          likes_count: {
+          likes: {
             type: "integer",
             example: 3,
             description: "좋아요 수",
+          },
+          likes_count: {
+            type: "integer",
+            example: 3,
+            description: "좋아요 수 (camelCase 호환)",
           },
           created_at: {
             type: "string",
@@ -1329,10 +1538,16 @@ const swaggerDefinition = {
             description: "매치 제목",
             example: "즐거운 주말 단식",
           },
-          matchDate: {
+          match_date: {
             type: "string",
             format: "date",
             description: "매치 날짜",
+            example: "2024-01-15",
+          },
+          matchDate: {
+            type: "string",
+            format: "date",
+            description: "매치 날짜 (camelCase 호환)",
             example: "2024-01-15",
           },
           location: {
@@ -1345,9 +1560,14 @@ const swaggerDefinition = {
             description: "코트 주소",
             example: "서울시 강남구 테헤란로 123",
           },
-          gameType: {
+          game_type: {
             type: "string",
             description: "경기 형태",
+            example: "단식",
+          },
+          gameType: {
+            type: "string",
+            description: "경기 형태 (camelCase 호환)",
             example: "단식",
           },
           participants: {
@@ -1361,9 +1581,9 @@ const swaggerDefinition = {
         required: [
           "id",
           "title",
-          "matchDate",
+          "match_date",
           "location",
-          "gameType",
+          "game_type",
           "participants",
         ],
       },
@@ -1395,19 +1615,24 @@ const swaggerDefinition = {
             description: "NTRP 레벨",
             example: 4.0,
           },
-          hasReviewed: {
+          has_reviewed: {
             type: "boolean",
             description: "이미 리뷰했는지 여부",
             example: false,
           },
+          hasReviewed: {
+            type: "boolean",
+            description: "이미 리뷰했는지 여부 (camelCase 호환)",
+            example: false,
+          },
         },
-        required: ["id", "name", "ntrp", "hasReviewed"],
+        required: ["id", "name", "ntrp", "has_reviewed"],
       },
 
       SubmitReviewRequest: {
         type: "object",
         properties: {
-          revieweeId: {
+          reviewee_id: {
             type: "string",
             format: "uuid",
             description: "리뷰 대상자 ID",
@@ -1422,7 +1647,7 @@ const swaggerDefinition = {
             description: "NTRP 레벨 평가 (0.5 단위)",
             example: 4.0,
           },
-          isPositive: {
+          is_positive: {
             type: "boolean",
             description: "긍정적 리뷰 여부 (true: 좋아요, false: 싫어요)",
             example: true,
@@ -1434,7 +1659,7 @@ const swaggerDefinition = {
             maxLength: 500,
           },
         },
-        required: ["revieweeId", "ntrp", "isPositive"],
+        required: ["reviewee_id", "ntrp", "is_positive"],
       },
 
       Review: {
@@ -1614,26 +1839,26 @@ const swaggerDefinition = {
 
       UpdateFcmTokenRequest: {
         type: "object",
-        required: ["fcmToken"],
+        required: ["fcm_token"],
         properties: {
-          fcmToken: {
+          fcm_token: {
             type: "string",
             minLength: 1,
             example: "dA1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ...",
             description: "모바일 푸시 알림 토큰 (필수)",
           },
-          deviceType: {
+          device_type: {
             type: "string",
             enum: ["ios", "android"],
             example: "ios",
             default: "ios",
             description: "디바이스 유형 (선택, 기본값: ios)",
           },
-          deviceInfo: {
+          device_info: {
             type: "object",
             description: "디바이스 추가 정보 (선택)",
             properties: {
-              userAgent: {
+              user_agent: {
                 type: "string",
                 example:
                   "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)...",
@@ -1799,7 +2024,7 @@ const swaggerDefinition = {
             description: "차단 사유 코드 (선택)",
             example: "harassment",
           },
-          reasonDetail: {
+          reason_detail: {
             type: "string",
             description: "상세 차단 사유 (선택)",
             example: "반복적인 욕설 및 괴롭힘",
@@ -1810,24 +2035,24 @@ const swaggerDefinition = {
 
       BlockStatusResponse: {
         type: "object",
-        required: ["isBlocked", "iBlockedThem", "theyBlockedMe"],
+        required: ["is_blocked", "i_blocked_them", "they_blocked_me"],
         properties: {
-          isBlocked: {
+          is_blocked: {
             type: "boolean",
             description: "양방향 차단 여부 (둘 중 하나라도 차단한 경우)",
             example: true,
           },
-          iBlockedThem: {
+          i_blocked_them: {
             type: "boolean",
             description: "내가 상대방을 차단했는지 여부",
             example: true,
           },
-          theyBlockedMe: {
+          they_blocked_me: {
             type: "boolean",
             description: "상대방이 나를 차단했는지 여부",
             example: false,
           },
-          myBlock: {
+          my_block: {
             type: "object",
             nullable: true,
             properties: {
@@ -1840,7 +2065,7 @@ const swaggerDefinition = {
                 type: "string",
                 description: "차단 사유",
               },
-              blockedAt: {
+              blocked_at: {
                 type: "string",
                 format: "date-time",
                 description: "차단 일시",
@@ -1848,7 +2073,7 @@ const swaggerDefinition = {
             },
             description: "내가 차단한 정보 (차단하지 않은 경우 null)",
           },
-          theirBlock: {
+          their_block: {
             type: "object",
             nullable: true,
             properties: {
@@ -1861,7 +2086,7 @@ const swaggerDefinition = {
                 type: "string",
                 description: "차단 사유",
               },
-              blockedAt: {
+              blocked_at: {
                 type: "string",
                 format: "date-time",
                 description: "차단 일시",
@@ -1899,14 +2124,21 @@ const swaggerDefinition = {
 
       BlockedUsersResponse: {
         type: "object",
-        required: ["blockedUsers", "pagination"],
+        required: ["blocked_users", "pagination"],
         properties: {
-          blockedUsers: {
+          blocked_users: {
             type: "array",
             items: {
               $ref: "#/components/schemas/BlockedUser",
             },
             description: "차단한 사용자 목록",
+          },
+          blockedUsers: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/BlockedUser",
+            },
+            description: "차단한 사용자 목록 (camelCase 호환)",
           },
           pagination: {
             $ref: "#/components/schemas/PaginationInfo",
@@ -1988,18 +2220,23 @@ const swaggerDefinition = {
                 type: "string",
                 format: "uri",
               },
+              profileImageUrl: {
+                type: "string",
+                format: "uri",
+                description: "프로필 이미지 URL (camelCase 호환)",
+              },
             },
-            description: "1:1 채팅방인 경우 상대방 정보",
+            description: "1:1 채팅방인 경우 상대방 정보 (camelCase 호환)",
           },
-          lastMessage: {
+          last_message: {
             $ref: "#/components/schemas/ChatMessage",
           },
-          unreadCount: {
+          unread_count: {
             type: "integer",
             example: 3,
             description: "읽지 않은 메시지 수",
           },
-          updatedAt: {
+          updated_at: {
             type: "string",
             format: "date-time",
             description: "마지막 업데이트 일시",
@@ -2224,21 +2461,21 @@ const swaggerDefinition = {
                   {
                     type: "object",
                     properties: {
-                      participantId: {
+                      participant_id: {
                         type: "string",
                         example: "123e4567-e89b-12d3-a456-426614174001",
                       },
-                      participantName: { type: "string", example: "김테니스" },
+                      participant_name: { type: "string", example: "김테니스" },
                       type: {
                         type: "string",
                         enum: ["approve_request", "cancel_approval"],
                         example: "approve_request",
                       },
                     },
-                    required: ["participantId", "participantName", "type"],
+                    required: ["participant_id", "participant_name", "type"],
                     example: {
-                      participantId: "123e4567-e89b-12d3-a456-426614174001",
-                      participantName: "김테니스",
+                      participant_id: "123e4567-e89b-12d3-a456-426614174001",
+                      participant_name: "김테니스",
                       type: "approve_request",
                     },
                   },

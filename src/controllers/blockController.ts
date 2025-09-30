@@ -5,6 +5,30 @@ import { ApiError, asyncHandler } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { AuthRequest } from "../types/auth";
 
+// 하위호환성을 위한 데이터 변환 함수
+const addBlockCamelCaseFields = (blockData: any) => {
+  return {
+    ...blockData,
+    // snake_case -> camelCase 매핑 추가
+    blockedUsers: blockData.blocked_users,
+    isBlocked: blockData.is_blocked,
+    iBlockedThem: blockData.i_blocked_them,
+    theyBlockedMe: blockData.they_blocked_me,
+    myBlock: blockData.my_block
+      ? {
+          ...blockData.my_block,
+          blockedAt: blockData.my_block.blocked_at,
+        }
+      : null,
+    theirBlock: blockData.their_block
+      ? {
+          ...blockData.their_block,
+          blockedAt: blockData.their_block.blocked_at,
+        }
+      : null,
+  };
+};
+
 export const blockController = {
   // 사용자 차단
   blockUser: asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -261,25 +285,49 @@ export const blockController = {
       .eq("blocked_id", currentUserId)
       .single();
 
-    return ResponseHelper.success(res, {
+    // 하위호환성을 위해 snake_case와 camelCase 모두 포함
+    const responseData = {
+      is_blocked: blockStatus === true,
       isBlocked: blockStatus === true,
+      i_blocked_them: !!myBlock,
       iBlockedThem: !!myBlock,
+      they_blocked_me: !!theirBlock,
       theyBlockedMe: !!theirBlock,
+      my_block: myBlock
+        ? {
+            id: myBlock.id,
+            reason: myBlock.reason,
+            blocked_at: myBlock.created_at,
+            blockedAt: myBlock.created_at,
+          }
+        : null,
       myBlock: myBlock
         ? {
             id: myBlock.id,
             reason: myBlock.reason,
+            blocked_at: myBlock.created_at,
             blockedAt: myBlock.created_at,
+          }
+        : null,
+      their_block: theirBlock
+        ? {
+            id: theirBlock.id,
+            reason: theirBlock.reason,
+            blocked_at: theirBlock.created_at,
+            blockedAt: theirBlock.created_at,
           }
         : null,
       theirBlock: theirBlock
         ? {
             id: theirBlock.id,
             reason: theirBlock.reason,
+            blocked_at: theirBlock.created_at,
             blockedAt: theirBlock.created_at,
           }
         : null,
-    });
+    };
+
+    return ResponseHelper.success(res, responseData);
   }),
 
   // 차단 사유 목록 조회 (상수)

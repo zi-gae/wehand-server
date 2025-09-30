@@ -455,9 +455,21 @@ export const matchController = {
       : count || 0;
     const pagination = createPagination(page, limit, finalCount);
 
+    // 하위호환성을 위해 camelCase 필드 추가
+    const transformedMatches = formattedMatches.map((match: any) => ({
+      ...match,
+      // snake_case -> camelCase 매핑 추가
+      game_type: match.gameType,
+      start_time: match.startTime,
+      end_time: match.endTime,
+      host_id: match.hostId,
+      host_name: match.hostName,
+      host_nickname: match.hostNickname,
+    }));
+
     return ResponseHelper.successWithPagination(
       res,
-      formattedMatches,
+      transformedMatches,
       pagination
     );
   }),
@@ -558,7 +570,26 @@ export const matchController = {
       confirmedParticipants,
     };
 
-    return ResponseHelper.success(res, formattedMatch);
+    // 하위호환성을 위해 camelCase 필드 추가
+    const transformedMatch = {
+      ...formattedMatch,
+      // snake_case -> camelCase 매핑 추가
+      game_type: formattedMatch.gameType,
+      start_time: formattedMatch.startTime,
+      end_time: formattedMatch.endTime,
+      host_id: match.host_id,
+      host_name: formattedMatch.hostName,
+      host_ntrp: formattedMatch.hostNtrp,
+      host_nickname: formattedMatch.hostNickname,
+      host_experience: formattedMatch.hostExperience,
+      confirmed_participants:
+        formattedMatch.confirmedParticipants?.map((p: any) => ({
+          ...p,
+          is_host: p.isHost,
+        })) || [],
+    };
+
+    return ResponseHelper.success(res, transformedMatch);
   }),
 
   // 1.2 / 매치 참가 신청

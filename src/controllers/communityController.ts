@@ -4,7 +4,49 @@ import { supabase } from "../lib/supabase";
 import { ApiError } from "../utils/errors";
 import { logger } from "../config/logger";
 import { NotificationService } from "../services/notificationService";
+import {
+  FeaturedPostService,
+  FeaturedPost,
+} from "../services/featuredPostService";
 import { z } from "zod";
+
+// 하위호환성을 위한 데이터 변환 함수들
+const addCamelCaseFields = (post: any) => {
+  return {
+    ...post,
+    // snake_case -> camelCase 매핑 추가
+    likes_count: post.likes,
+    likesCount: post.likes,
+    commentsCount: post.comments_count,
+    views_count: post.views || 0,
+    viewsCount: post.views || 0,
+    createdAt: post.created_at,
+    updatedAt: post.updated_at,
+    author: post.author
+      ? {
+          ...post.author,
+          profileImageUrl: post.author.profile_image_url,
+          profile_image_url: post.author.profile_image_url,
+        }
+      : null,
+  };
+};
+
+const addCommentCamelCaseFields = (comment: any) => {
+  return {
+    ...comment,
+    likes_count: comment.likes,
+    likesCount: comment.likes,
+    createdAt: comment.created_at,
+    author: comment.author
+      ? {
+          ...comment.author,
+          profileImageUrl: comment.author.profile_image_url,
+          profile_image_url: comment.author.profile_image_url,
+        }
+      : null,
+  };
+};
 
 // Validation schemas
 const createPostSchema = z.object({
@@ -32,6 +74,29 @@ const updatePostSchema = z.object({
   images: z.array(z.string()).max(10).optional(),
 });
 
+// 인기 게시글 조회
+export const getFeaturedPosts = async (req: Request, res: Response) => {
+  try {
+    const featuredPosts: FeaturedPost[] =
+      await FeaturedPostService.getCurrentFeaturedPosts();
+
+    res.json({
+      success: true,
+      data: featuredPosts,
+    });
+  } catch (error: any) {
+    logger.error("인기 게시글 조회 실패:", error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "서버 내부 오류가 발생했습니다",
+      },
+    });
+  }
+};
+
 // 게시글 목록 조회
 export const getPosts = async (req: Request, res: Response) => {
   try {
@@ -41,6 +106,7 @@ export const getPosts = async (req: Request, res: Response) => {
       sort = "latest",
       page = "1",
       limit = "10",
+      includeFeatured = "true", // 인기 게시글 포함 여부
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
@@ -122,9 +188,27 @@ export const getPosts = async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil((totalCount || 0) / Number(limit));
 
+    // 첫 페이지이고 includeFeatured가 true인 경우 인기 게시글 조회
+    let featuredPosts: FeaturedPost[] = [];
+    if (
+      Number(page) === 1 &&
+      includeFeatured === "true" &&
+      !search &&
+      !category
+    ) {
+      featuredPosts = await FeaturedPostService.getCurrentFeaturedPosts();
+    }
+
+    // 하위호환성을 위해 camelCase 필드 추가
+    const transformedPosts = posts?.map(addCamelCaseFields) || [];
+    const transformedFeaturedPosts = featuredPosts.map((post) =>
+      addCamelCaseFields(post)
+    );
+
     res.json({
       success: true,
-      data: posts,
+      data: transformedPosts,
+      featuredPosts: transformedFeaturedPosts, // 인기 게시글 별도 반환
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -217,12 +301,17 @@ export const getPost = async (req: Request, res: Response) => {
       isLiked = !!like;
     }
 
+    // 하위호환성을 위해 camelCase 필드 추가
+    const transformedPost = addCamelCaseFields({
+      ...post,
+      views: (post.views || 0) + 1,
+    });
+
     res.json({
       success: true,
       data: {
-        ...post,
+        ...transformedPost,
         isLiked,
-        views: (post.views || 0) + 1,
       },
     });
   } catch (error: any) {
@@ -705,8 +794,8 @@ export const getComments = async (req: Request, res: Response) => {
           .order("created_at", { ascending: true });
 
         return {
-          ...comment,
-          replies: replies || [],
+          ...addCommentCamelCaseFields(comment),
+          replies: (replies || []).map(addCommentCamelCaseFields),
         };
       })
     );
@@ -840,13 +929,6 @@ export const createComment = async (req: AuthRequest, res: Response) => {
       throw new ApiError(500, "댓글 작성 실패", "DATABASE_ERROR", true, error);
     }
 
-    // 게시글 댓글 수 증가 (대댓글이 아닌 경우에만)
-    if (!parent_id) {
-      await supabase.rpc("increment_post_comments", {
-        post_id: postId,
-      });
-    }
-
     // 알림 발송
     if (parent_id && parentCommentAuthor) {
       // 대댓글인 경우 - 부모 댓글 작성자에게 알림 (자신의 댓글이 아닌 경우에만)
@@ -932,13 +1014,6 @@ export const deleteComment = async (req: AuthRequest, res: Response) => {
       throw new ApiError(500, "댓글 삭제 실패", "DATABASE_ERROR", true, error);
     }
 
-    // 게시글 댓글 수 감소 (대댓글이 아닌 경우에만)
-    if (!comment.parent_id) {
-      await supabase.rpc("decrement_post_comments", {
-        post_id: comment.post_id,
-      });
-    }
-
     res.json({
       success: true,
       data: {
@@ -979,4 +1054,5 @@ export const communityController = {
   getComments,
   createComment,
   deleteComment,
+  getFeaturedPosts, // 추가
 };

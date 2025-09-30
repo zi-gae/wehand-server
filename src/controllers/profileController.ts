@@ -5,6 +5,22 @@ import { ApiError } from "../utils/errors";
 import { logger } from "../config/logger";
 import { z } from "zod";
 
+// 하위호환성을 위한 데이터 변환 함수
+const addUserCamelCaseFields = (user: any) => {
+  return {
+    ...user,
+    // snake_case -> camelCase 매핑 추가
+    profileImageUrl: user.profile_image_url,
+    experienceYears: user.experience_years,
+    favoriteStyle: user.favorite_style,
+    reviewNtrp: user.review_ntrp,
+    positiveReviews: user.positive_reviews,
+    negativeReviews: user.negative_reviews,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
+  };
+};
+
 // Validation schemas
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(50).optional(),
@@ -116,42 +132,45 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
         ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / totalReviews
         : null;
 
+    // 하위호환성을 위해 snake_case와 camelCase 모두 포함
+    const userInfo = addUserCamelCaseFields(user);
+
+    const stats = {
+      total_matches: totalMatches,
+      totalMatches,
+      wins: totalWins,
+      losses: totalMatches - totalWins,
+      win_rate: winRate,
+      winRate,
+      ranking: null, // TODO: 랭킹 시스템 구현 후 업데이트
+    };
+
+    const reviewsData = {
+      total_reviews: totalReviews,
+      totalReviews,
+      total_rating_sum: totalRatingSum,
+      totalRatingSum,
+      avg_ntrp: avgNtrp ? Math.round(avgNtrp * 10) / 10 : null,
+      avgNtrp: avgNtrp ? Math.round(avgNtrp * 10) / 10 : null,
+      avg_rating: avgRating ? Math.round(avgRating * 10) / 10 : null,
+      avgRating: avgRating ? Math.round(avgRating * 10) / 10 : null,
+      comments:
+        reviews
+          ?.filter((r) => r.comment) // comment가 있는 것만 필터링
+          .map((r) => ({
+            comment: r.comment,
+            nickname: (r.reviewer as any)?.nickname || "Unknown",
+            created_at: r.created_at,
+            createdAt: r.created_at,
+          })) || [],
+    };
+
     res.json({
       success: true,
       data: {
-        userInfo: {
-          ...user,
-          // snake_case to camelCase
-          profileImageUrl: user.profile_image_url,
-          experienceYears: user.experience_years,
-          favoriteStyle: user.favorite_style,
-          reviewNtrp: user.review_ntrp,
-          positiveReviews: user.positive_reviews,
-          negativeReviews: user.negative_reviews,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-        },
-        stats: {
-          totalMatches,
-          wins: totalWins,
-          losses: totalMatches - totalWins,
-          winRate,
-          ranking: null, // TODO: 랭킹 시스템 구현 후 업데이트
-        },
-        reviews: {
-          totalReviews,
-          totalRatingSum,
-          avgNtrp: avgNtrp ? Math.round(avgNtrp * 10) / 10 : null,
-          avgRating: avgRating ? Math.round(avgRating * 10) / 10 : null,
-          comments:
-            reviews
-              ?.filter((r) => r.comment) // comment가 있는 것만 필터링
-              .map((r) => ({
-                comment: r.comment,
-                nickname: (r.reviewer as any)?.nickname || "Unknown",
-                createdAt: r.created_at,
-              })) || [],
-        },
+        userInfo,
+        stats,
+        reviews: reviewsData,
       },
     });
   } catch (error: any) {

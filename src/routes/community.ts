@@ -6,6 +6,57 @@ const router = Router();
 
 /**
  * @swagger
+ * /api/community/posts/featured:
+ *   get:
+ *     summary: 인기 게시글 조회
+ *     description: 현재 선정된 인기 게시글 목록을 조회합니다. 24시간마다 자동으로 선정됩니다.
+ *     tags: [Community]
+ *     responses:
+ *       200:
+ *         description: 인기 게시글 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       featured_at:
+ *                         type: string
+ *                         format: date-time
+ *                       expires_at:
+ *                         type: string
+ *                         format: date-time
+ *                       featured_type:
+ *                         type: string
+ *                         example: daily
+ *                       metrics:
+ *                         type: object
+ *                         properties:
+ *                           likes:
+ *                             type: number
+ *                           comments:
+ *                             type: number
+ *                           views:
+ *                             type: number
+ *                           score:
+ *                             type: number
+ *                       post:
+ *                         $ref: '#/components/schemas/Post'
+ */
+router.get("/posts/featured", communityController.getFeaturedPosts);
+
+/**
+ * @swagger
  * /api/community/posts:
  *   get:
  *     summary: 게시글 목록 조회

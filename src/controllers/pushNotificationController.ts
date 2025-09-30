@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pushNotificationService } from "../services/pushNotificationService";
+import { supabase } from "../lib/supabase";
 import { z } from "zod";
 
 // 요청 스키마 정의
@@ -320,6 +321,78 @@ export class PushNotificationController {
       });
     } catch (error) {
       console.error("매치 참가 신청 알림 전송 실패:", error);
+    }
+  }
+
+  // 인기 게시글 알림 전송
+  async sendFeaturedPostNotification(post: any) {
+    try {
+      // 모든 활성 사용자 조회
+      const { data: users, error } = await supabase
+        .from("users")
+        .select("id")
+        .eq("is_active", true)
+        .eq("notification_enabled", true); // 알림 활성화된 사용자만
+
+      if (error || !users) {
+        console.error("사용자 조회 실패:", error);
+        return;
+      }
+
+      const userIds = users.map((user) => user.id);
+
+      if (userIds.length === 0) {
+        console.log("알림을 받을 사용자가 없습니다.");
+        return;
+      }
+
+      // 배치로 알림 전송 (100명씩)
+      const batchSize = 100;
+      for (let i = 0; i < userIds.length; i += batchSize) {
+        const batch = userIds.slice(i, i + batchSize);
+
+        await pushNotificationService.sendToMultipleUsers(batch, {
+          title: "🔥 오늘의 인기 게시글",
+          body: `"${post.title}" - ${post.author.nickname}님의 글이 인기 게시글로 선정되었습니다!`,
+          type: "featured_post",
+          data: {
+            postId: post.id,
+            categoryId: post.category,
+            authorId: post.author.id,
+          },
+          imageUrl: post.attachments?.[0]?.url, // 첫 번째 이미지가 있으면 포함
+          priority: "high",
+          channel: "featured",
+        });
+      }
+
+      console.log(`인기 게시글 알림 전송 완료: ${userIds.length}명`);
+    } catch (error) {
+      console.error("인기 게시글 알림 전송 실패:", error);
+    }
+  }
+
+  // 토픽을 이용한 인기 게시글 알림 (대안)
+  async sendFeaturedPostNotificationByTopic(post: any) {
+    try {
+      // 모든 사용자가 'all_users' 토픽을 구독한다고 가정
+      await pushNotificationService.sendToTopic("all_users", {
+        title: "🔥 오늘의 인기 게시글",
+        body: `"${post.title}" - ${post.author.nickname}님의 글이 인기 게시글로 선정되었습니다!`,
+        type: "featured_post",
+        data: {
+          postId: post.id,
+          categoryId: post.category,
+          authorId: post.author.id,
+        },
+        imageUrl: post.attachments?.[0]?.url,
+        priority: "high",
+        channel: "featured",
+      });
+
+      console.log("인기 게시글 토픽 알림 전송 완료");
+    } catch (error) {
+      console.error("인기 게시글 토픽 알림 전송 실패:", error);
     }
   }
 

@@ -141,13 +141,25 @@ export const homeController = {
         };
       }) || [];
 
+    // 하위호환성을 위해 camelCase 필드 추가
+    const transformedMatches = formattedMatches.map((match: any) => ({
+      ...match,
+      // snake_case -> camelCase 매핑 추가
+      game_type: match.gameType,
+      start_time: match.startTime,
+      end_time: match.endTime,
+      host_name: match.hostName,
+    }));
+
     return ResponseHelper.success(res, {
       user: {
         name: userData.name || userData.nickname || "테니스 플레이어",
         greeting,
         motivationMessage,
+        motivation_message: motivationMessage, // snake_case 버전도 추가
       },
-      upcomingMatches: formattedMatches,
+      upcoming_matches: transformedMatches,
+      upcomingMatches: transformedMatches, // camelCase 버전
     });
   }),
 };
@@ -195,7 +207,10 @@ function formatNtrpLevel(minNtrp?: number, maxNtrp?: number): string {
 }
 
 // 구력 레벨 포맷팅
-function formatExperienceLevel(minExperience?: number, maxExperience?: number): string {
+function formatExperienceLevel(
+  minExperience?: number,
+  maxExperience?: number
+): string {
   if (!minExperience && !maxExperience) return "모든 구력";
   if (minExperience === maxExperience) return `${minExperience}년`;
   if (!minExperience) return `~${maxExperience}년`;
