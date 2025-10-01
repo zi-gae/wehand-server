@@ -11,9 +11,9 @@ primary_region = "nrt"  # 도쿄 (한국과 가장 가까움)
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = true
+  auto_stop_machines = false  # 자동 중지 비활성화
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 2    # 최소 실행 머신 수 설정
   processes = ["app"]
 
   # Socket.IO를 위한 sticky sessions 설정
