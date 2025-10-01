@@ -10,8 +10,8 @@ export const versionController = {
 
     // 버전 정보 설정 (이 값들은 환경변수나 설정 파일에서 관리하는 것이 좋습니다)
     const versionInfo = {
-      minimumVersion: "1.4.0", // 최소 필수 버전
-      latestVersion: "1.4.0", // 최신 버전
+      minimumVersion: "1.4.5", // 최소 필수 버전
+      latestVersion: "1.4.5", // 최신 버전
       forceUpdate: true, // 강제 업데이트 여부
       updateUrl: undefined,
       message:
