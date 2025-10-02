@@ -317,10 +317,13 @@ export const getMatches = asyncHandler(async (req: Request, res: Response) => {
   // 필터링 후 총 개수 업데이트
   totalFilteredCount = processedMatches.length;
 
-  // 현재 시간 기준으로 시작 시간이 지난 매치 필터링
+  // 현재 시간 기준으로 시작 시간이 지난 매치 필터링 (한국 시간 기준)
   const now = new Date();
-  const currentDate = now.toISOString().split("T")[0]; // yyyy-mm-dd
-  const currentTime = now.toTimeString().split(" ")[0]; // hh:mm:ss
+  // 한국 시간(KST, UTC+9)으로 변환
+  const kstOffset = 9 * 60; // 9시간을 분으로 변환
+  const kstNow = new Date(now.getTime() + kstOffset * 60 * 1000);
+  const currentDate = kstNow.toISOString().split("T")[0]; // yyyy-mm-dd
+  const currentTime = kstNow.toISOString().split("T")[1].substring(0, 8); // hh:mm:ss
 
   processedMatches = processedMatches.filter((match: any) => {
     // 매치 날짜가 오늘보다 미래인 경우 포함
