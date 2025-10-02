@@ -210,7 +210,7 @@ export const matchFilterSchema = z.object({
     .string()
     .transform((val) => (val ? parseInt(val) : undefined))
     .optional(),
-  sort: z.enum(["latest", "distance", "price"]).optional(),
+  sort: z.enum(["latest", "distance", "price", "deadline"]).optional(),
   user_lat: z
     .string()
     .transform((val) => (val ? parseFloat(val) : undefined))

@@ -156,9 +156,9 @@ const router = Router();
  *         name: sort
  *         schema:
  *           type: string
- *           enum: [latest, distance, price]
+ *           enum: [latest, distance, price, deadline]
  *           default: latest
- *         description: 정렬 기준 (latest=최신순, distance=거리순, price=가격순)
+ *         description: 정렬 기준 (latest=최신순, distance=거리순, price=가격순, deadline=마감임박순)
  *       - in: query
  *         name: user_lat
  *         schema:
