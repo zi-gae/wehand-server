@@ -7,9 +7,9 @@
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "dev": "nodemon src/app.ts",
+    "dev": "TZ=Asia/Seoul nodemon src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "TZ=Asia/Seoul node dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

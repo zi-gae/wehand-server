@@ -1,5 +1,10 @@
+
+
 # Node.js 20 LTS 사용
 FROM node:20-alpine
+
+
+ENV TZ=Asia/Seoul
 
 # 시스템 패키지 업데이트로 취약점 최소화
 RUN apk update && apk upgrade
